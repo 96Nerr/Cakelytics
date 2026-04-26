@@ -1,9 +1,10 @@
 # Welcome to your Expo app 👋
 
-jia, ridho, milka, davin
-2404130156
-2404130031
-2404130184
+## Kelompok 2
+- Najihatul Wilda (2404130031)
+- Naufal Ridho Permana (2404130075)
+- Davin Habibie Rahman (2404130156)
+- Milka Tanwandeo Onesly (2404130184)
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
