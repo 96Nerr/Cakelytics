@@ -1,13 +1,55 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Produk {
+  idProduk        Int               @id @default(autoincrement())
+  namaProduk      String
+  hargaModal      Int
+  hargaJual       Int
+  stok            Int               @default(0)
+  barangRusak     BarangRusak[]
+  detailPenjualan DetailPenjualan[]
+  produksi        Produksi[]
+}
+
+model Produksi {
+  idProduksi      Int      @id @default(autoincrement())
+  jumlahProduksi  Int
+  tanggalProduksi DateTime @default(now())
+  idProduk        Int
+  produk          Produk   @relation(fields: [idProduk], references: [idProduk])
+}
+
+model BarangRusak {
+  idRusak       Int      @id @default(autoincrement())
+  jumlahRusak   Int
+  tanggalRusak  DateTime @default(now())
+  totalKerugian Int
+  keterangan    String?
+  idProduk      Int
+  produk        Produk   @relation(fields: [idProduk], references: [idProduk])
+}
+
+model TransaksiPenjualan {
+  idTransaksi      Int               @id @default(autoincrement())
+  tanggalTransaksi DateTime          @default(now())
+  totalPenjualan   Int
+  detailPenjualan  DetailPenjualan[]
+}
+
+model DetailPenjualan {
+  idDetail          Int                @id @default(autoincrement())
+  jumlah            Int
+  hargaModalSaatIni Int
+  hargaJualSaatIni  Int
+  subtotal          Int
+  idTransaksi       Int
+  idProduk          Int
+  produk            Produk             @relation(fields: [idProduk], references: [idProduk])
+  transaksi         TransaksiPenjualan @relation(fields: [idTransaksi], references: [idTransaksi])
 }
