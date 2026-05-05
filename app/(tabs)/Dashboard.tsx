@@ -1,134 +1,105 @@
 import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 
 export default function Home() {
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#e65994", "#FFFFFF"]} 
+      style={styles.container}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
-
-        
         <View style={styles.header}>
           <Text style={styles.logo}>Cakelytics</Text>
-
           <Text style={styles.date}>Rabu, 8 April 2026</Text>
-
           <Text style={styles.greeting}>GOOD MORNING</Text>
         </View>
 
-
         <View style={styles.incomeCard}>
           <Text style={styles.cardTitle}>Pendapatan Hari ini</Text>
-
           <Text style={styles.amount}>1.999.200,00</Text>
-
           <Text style={styles.increase}>↗ Naik Rp 1.267.000</Text>
         </View>
 
-
-        
+        {/* WARNING CARDS */}
         <View style={styles.warningRed}>
-          <Text style={styles.warningRedText}>
-             1 Produk Habis Stok!
-          </Text>
-
-          <Text style={styles.arrow}>→</Text>
+          <Text style={styles.warningIconRed}>❌</Text>
+          <View style={styles.warningContent}>
+            <Text style={styles.warningRedText}>1 Produk Habis Stok!</Text>
+            <Text style={styles.warningDetail}>Truffle</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={20} color="red" />
         </View>
-
 
         <View style={styles.warningYellow}>
-          <Text style={styles.warningYellowText}>
-             Stok Hampir Habis!
-          </Text>
-
-          <Text style={styles.arrowYellow}>→</Text>
+          <Text style={styles.warningIconYellow}>⚠️</Text>
+          <View style={styles.warningContent}>
+            <Text style={styles.warningYellowText}>Stok Hampir Habis!</Text>
+            <Text style={styles.warningDetail}>Soft Cookies (2)</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={20} color="#A27B00" />
         </View>
-
 
         {/* STATS */}
         <View style={styles.statsContainer}>
-
-          <View style={styles.statsBlue}>
+          <View style={styles.statsCard}>
             <Text style={styles.statsIcon}>📦</Text>
-
-            <Text style={styles.statsNumber}>5</Text>
-
-            <Text style={styles.statsLabel}>Jenis Kue</Text>
+            <View style={styles.statsContent}>
+              <Text style={styles.statsTitle}>Total Produk</Text>
+              <Text style={styles.statsNumber}>5</Text>
+              <Text style={styles.statsLabel}>Jenis Kue</Text>
+            </View>
           </View>
 
-
-          <View style={styles.statsPink}>
+          <View style={styles.statsCard}>
             <Text style={styles.statsIcon}>🧾</Text>
-
-            <Text style={styles.statsNumber}>10</Text>
-
-            <Text style={styles.statsLabel}>Penjualan</Text>
+            <View style={styles.statsContent}>
+              <Text style={styles.statsTitle}>Transaksi Hari Ini</Text>
+              <Text style={styles.statsNumber}>10</Text>
+              <Text style={styles.statsLabel}>Penjualan</Text>
+            </View>
           </View>
         </View>
 
-
         {/* BEST SELLER */}
         <View style={styles.bestSellerCard}>
-
           <View style={styles.bestSellerHeader}>
             <Text style={styles.bestSellerTitle}> Produk Terlaris</Text>
-
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>Lihat Semua</Text>
-            </TouchableOpacity>
+            <Text style={styles.seeAll}>Lihat Semua</Text>
           </View>
 
-
-          {/* ITEM 1 */}
           <View style={styles.productRow}>
             <Text style={styles.productName}> Soft Cookies</Text>
-
             <Text style={styles.productSold}>8 Terjual</Text>
           </View>
 
-
-          {/* ITEM 2 */}
           <View style={styles.productRow}>
             <Text style={styles.productName}> Cheesecake</Text>
-
             <Text style={styles.productSold}>6 Terjual</Text>
           </View>
 
-
-          {/* ITEM 3 */}
           <View style={styles.productRow}>
             <Text style={styles.productName}> Truffle</Text>
-
             <Text style={styles.productSold}>5 Terjual</Text>
           </View>
         </View>
       </ScrollView>
-
-
-      {/* BOTTOM NAVIGATION */}
-      <View style={styles.bottomNav}>
-        <Text style={styles.navIcon}>🏠</Text>
-        <Text style={styles.navIcon}>📦</Text>
-        <Text style={styles.navIcon}>🛒</Text>
-        <Text style={styles.navIcon}>📊</Text>
-        <Text style={styles.navIcon}>📚</Text>
-      </View>
-    </View>
+    </LinearGradient>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E88D8D",
+    backgroundColor: "#d49f9f",
   },
-
+  
   header: {
     paddingTop: 60,
     paddingHorizontal: 20,
@@ -157,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginHorizontal: 20,
     borderRadius: 25,
-    padding: 20,
+    padding: 15,
     marginBottom: 20,
     elevation: 5,
   },
@@ -183,8 +154,8 @@ const styles = StyleSheet.create({
   warningRed: {
     backgroundColor: "#FFDCDC",
     marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 15,
+    padding: 10,
     marginBottom: 15,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -204,8 +175,8 @@ const styles = StyleSheet.create({
   warningYellow: {
     backgroundColor: "#F5E9B8",
     marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 15,
+    padding: 10,
     marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -221,6 +192,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#A27B00",
   },
+warningContent: {
+  flex: 1,            // biar isi teks ambil ruang di tengah
+  marginLeft: 10,     // jarak dari ikon
+},
+
+warningIconRed: {
+  fontSize: 22,
+  color: "red",
+},
+
+warningIconYellow: {
+  fontSize: 22,
+  color: "#A27B00",
+},
+
+warningDetail: {
+  fontSize: 13,
+  color: "#666",
+  marginTop: 2,
+},
 
   statsContainer: {
     flexDirection: "row",
@@ -229,37 +220,42 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  statsBlue: {
-    backgroundColor: "#C7F2F3",
-    width: "47%",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-  },
+ statsCard: {
+  backgroundColor: "#FFD7D7",
+  width: "48%",
+  borderRadius: 20,
+  padding: 3,
+  flexDirection: "row",   // ✅ ikon kiri, teks kanan
+  alignItems: "center",
+},
 
-  statsPink: {
-    backgroundColor: "#FFD7D7",
-    width: "47%",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-  },
+statsIcon: {
+  fontSize: 32,
+  marginRight: 5,
+  color: "#E44D4D",
+},
 
-  statsIcon: {
-    fontSize: 28,
-    marginBottom: 10,
-  },
+statsContent: {
+  flex: 1,
+},
 
-  statsNumber: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#111",
-  },
+statsTitle: {
+  fontSize: 12,
+  fontWeight: "600",
+  color: "#b12727",
+  marginBottom: 2,
+},
 
-  statsLabel: {
-    marginTop: 5,
-    color: "#666",
-  },
+statsNumber: {
+  fontSize: 20,
+  fontWeight: "bold",
+  color: "#111",
+},
+
+statsLabel: {
+  color: "#666",
+  fontSize: 13,
+},
 
   bestSellerCard: {
     backgroundColor: "#F3F3F3",
@@ -297,23 +293,6 @@ const styles = StyleSheet.create({
   },
 
   productSold: {
-    color: "#666",
-  },
-
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "white",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 18,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-  },
-
-  navIcon: {
-    fontSize: 24,
+    color: "#d6cfcf",
   },
 });

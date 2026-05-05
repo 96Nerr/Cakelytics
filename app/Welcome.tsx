@@ -26,12 +26,13 @@ export default function Welcome() {
           and your dessert business in one integrated platform.
         </Text>
 
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => router.push("/Home")}
-        >
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
+       <TouchableOpacity
+  style={styles.button}
+  onPress={() => router.replace("/(tabs)/Dashboard")}
+>
+  <Text style={styles.buttonText}>Continue</Text>
+</TouchableOpacity>
+
       </View>
     </View>
   );
