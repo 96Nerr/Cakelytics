@@ -3,81 +3,53 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
-
-// -----------------------------------------------------
-// 1. TABEL PRODUK (Tabel Master)
-// -----------------------------------------------------
 model Produk {
-  idProduk     Int      @id @default(autoincrement())
-  namaProduk   String
-  hargaModal   Int
-  hargaJual    Int
-  stok         Int      @default(0)
-
-  // Relasi (Otomatis dibuat oleh Prisma untuk menyambungkan antar tabel)
-  produksi          Produksi[]
-  barangRusak       BarangRusak[]
-  detailPenjualan   DetailPenjualan[]
+  idProduk        Int               @id @default(autoincrement())
+  namaProduk      String
+  hargaModal      Int
+  hargaJual       Int
+  stok            Int               @default(0)
+  barangRusak     BarangRusak[]
+  detailPenjualan DetailPenjualan[]
+  produksi        Produksi[]
 }
 
-// -----------------------------------------------------
-// 2. TABEL PRODUKSI (Penambahan Stok Baru)
-// -----------------------------------------------------
 model Produksi {
   idProduksi      Int      @id @default(autoincrement())
   jumlahProduksi  Int
   tanggalProduksi DateTime @default(now())
-
-  // Foreign Key ke tabel Produk
   idProduk        Int
   produk          Produk   @relation(fields: [idProduk], references: [idProduk])
 }
 
-// -----------------------------------------------------
-// 3. TABEL BARANG RUSAK (Pengurangan Stok & Kerugian)
-// -----------------------------------------------------
 model BarangRusak {
   idRusak       Int      @id @default(autoincrement())
   jumlahRusak   Int
   tanggalRusak  DateTime @default(now())
   totalKerugian Int
-  keterangan    String?  // Tanda (?) berarti boleh kosong
-
-  // Foreign Key ke tabel Produk
+  keterangan    String?
   idProduk      Int
   produk        Produk   @relation(fields: [idProduk], references: [idProduk])
 }
 
-// -----------------------------------------------------
-// 4. TABEL TRANSAKSI PENJUALAN
-// -----------------------------------------------------
 model TransaksiPenjualan {
-  idTransaksi      Int      @id @default(autoincrement())
-  tanggalTransaksi DateTime @default(now())
+  idTransaksi      Int               @id @default(autoincrement())
+  tanggalTransaksi DateTime          @default(now())
   totalPenjualan   Int
-
-  // Relasi
   detailPenjualan  DetailPenjualan[]
 }
 
-// -----------------------------------------------------
-// 5. TABEL DETAIL PENJUALAN (Tabel Penghubung M:N)
-// -----------------------------------------------------
 model DetailPenjualan {
-  idDetail          Int      @id @default(autoincrement())
+  idDetail          Int                @id @default(autoincrement())
   jumlah            Int
   hargaModalSaatIni Int
-  hargaJualSaatIni  Int      // <--- Tambahan dari koreksi ERD
-  subtotal          Int      // (jumlah * hargaJualSaatIni)
-
-  // Foreign Key ke tabel Transaksi
+  hargaJualSaatIni  Int
+  subtotal          Int
   idTransaksi       Int
-  transaksi         TransaksiPenjualan @relation(fields: [idTransaksi], references: [idTransaksi])
-
-  // Foreign Key ke tabel Produk
   idProduk          Int
   produk            Produk             @relation(fields: [idProduk], references: [idProduk])
+  transaksi         TransaksiPenjualan @relation(fields: [idTransaksi], references: [idTransaksi])
 }
