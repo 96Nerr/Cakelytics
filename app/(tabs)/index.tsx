@@ -34,3 +34,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+import PenjualanScreen from "./penjualan";
+
+export default function HomeScreen() {
+  return <PenjualanScreen />;
+}
