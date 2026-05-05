@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Text, StyleSheet } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
@@ -7,7 +7,7 @@ export default function Index() {
 
   useEffect(() => {
     setTimeout(() => {
-      router.replace("/Welcome");
+      router.replace("/welcome");
     }, 3000);
   }, []);
 

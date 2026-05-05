@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 
-export default function Home() {
+export default function index() {
   return (
     <LinearGradient
       colors={["#e65994", "#FFFFFF"]} 
