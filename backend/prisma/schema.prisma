@@ -22,7 +22,7 @@ model Produksi {
   jumlahProduksi  Int
   tanggalProduksi DateTime @default(now())
   idProduk        Int
-  produk          Produk   @relation(fields: [idProduk], references: [idProduk])
+  produk          Produk   @relation(fields: [idProduk], references: [idProduk], onDelete: Cascade)
 }
 
 model BarangRusak {
@@ -32,7 +32,7 @@ model BarangRusak {
   totalKerugian Int
   keterangan    String?
   idProduk      Int
-  produk        Produk   @relation(fields: [idProduk], references: [idProduk])
+  produk        Produk   @relation(fields: [idProduk], references: [idProduk], onDelete: Cascade)
 }
 
 model TransaksiPenjualan {
@@ -50,6 +50,6 @@ model DetailPenjualan {
   subtotal          Int
   idTransaksi       Int
   idProduk          Int
-  produk            Produk             @relation(fields: [idProduk], references: [idProduk])
+  produk            Produk             @relation(fields: [idProduk], references: [idProduk], onDelete: Cascade)
   transaksi         TransaksiPenjualan @relation(fields: [idTransaksi], references: [idTransaksi])
 }
