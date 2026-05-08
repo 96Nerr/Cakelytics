@@ -1,5 +1,6 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Modal,
@@ -16,67 +17,18 @@ import {
 } from "react-native";
 
 type Tab = "catat" | "rusak" | "riwayat";
-type NavItem = "home" | "box" | "cart" | "chart" | "layers";
 
 export default function PenjualanScreen() {
-  const [activeTab, setActiveTab] = useState<Tab>("catat");
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [jumlah, setJumlah] = useState("");
-  const [activeNav, setActiveNav] = useState<NavItem>("cart");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "catat", label: "Catat Jual" },
-    { key: "rusak", label: "Rusak / Kadaluarsa" },
-    { key: "riwayat", label: "Riwayat" },
-  ];
-
-  const navItems: { key: NavItem; icon: React.ReactNode }[] = [
-    {
-      key: "home",
-      icon: (
-        <Ionicons
-          name="home-outline"
-          size={22}
-          color={activeNav === "home" ? "#E05A6A" : "#aaa"}
-        />
-      ),
-    },
-    {
-      key: "box",
-      icon: (
-        <Feather
-          name="box"
-          size={22}
-          color={activeNav === "box" ? "#E05A6A" : "#aaa"}
-        />
-      ),
-    },
-    {
-      key: "cart",
-      icon: <Ionicons name="cart-outline" size={24} color="#fff" />,
-    },
-    {
-      key: "chart",
-      icon: (
-        <Ionicons
-          name="bar-chart-outline"
-          size={22}
-          color={activeNav === "chart" ? "#E05A6A" : "#aaa"}
-        />
-      ),
-    },
-    {
-      key: "layers",
-      icon: (
-        <Feather
-          name="layers"
-          size={22}
-          color={activeNav === "layers" ? "#E05A6A" : "#aaa"}
-        />
-      ),
-    },
+  const tabs: { key: Tab; label: string; route: string }[] = [
+    { key: "catat", label: "Catat Jual", route: "/cart" },
+    { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
+    { key: "riwayat", label: "Riwayat", route: "/riwayat" },
   ];
 
   return (
@@ -107,22 +59,24 @@ export default function PenjualanScreen() {
           />
         </View>
 
-        {/* Tab Selector */}
+        {/* Tab Selector — navigates via router */}
         <View style={styles.tabContainer}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.key}
               style={[
                 styles.tabItem,
-                activeTab === tab.key && styles.tabItemActive,
+                tab.key === "catat" && styles.tabItemActive,
               ]}
-              onPress={() => setActiveTab(tab.key)}
+              onPress={() => {
+                if (tab.key !== "catat") router.push(tab.route as any);
+              }}
               activeOpacity={0.8}
             >
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === tab.key && styles.tabTextActive,
+                  tab.key === "catat" && styles.tabTextActive,
                 ]}
                 numberOfLines={1}
               >
@@ -160,24 +114,6 @@ export default function PenjualanScreen() {
           </TouchableOpacity>
         </ScrollView>
       </View>
-
-      {/* Bottom Navigation <View style={styles.bottomNav}>
-        {navItems.map((item) => (
-          <TouchableOpacity
-            key={item.key}
-            style={styles.navItem}
-            onPress={() => setActiveNav(item.key)}
-            activeOpacity={0.7}
-          >
-            {item.key === "cart" ? (
-              <View style={styles.navCartCircle}>{item.icon}</View>
-            ) : (
-              item.icon
-            )}
-          </TouchableOpacity>
-        ))}
-      </View> */}
-      
 
       {/* Modal */}
       <Modal
@@ -248,11 +184,8 @@ export default function PenjualanScreen() {
   );
 }
 
-const PINK_DARK = "#E8848D";
-const PINK_MID = "#F0A0A8";
-const PINK_LIGHT = "#FAD8DB";
-const PINK_BUTTON = "#F2B4B8";
 const RED_PRIMARY = "#E05A6A";
+const PINK_BUTTON = "#F2B4B8";
 const WHITE = "#FFFFFF";
 
 const styles = StyleSheet.create({
@@ -369,42 +302,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
-
-  // Bottom Nav
-  bottomNav: {
-    flexDirection: "row",
-    backgroundColor: WHITE,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "space-around",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  navItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  navCartCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: RED_PRIMARY,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: RED_PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-    marginTop: -18,
-  },
-
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
