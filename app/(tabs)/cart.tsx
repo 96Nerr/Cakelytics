@@ -22,7 +22,20 @@ const BASE_URL = "http://192.168.110.115:5000/api";
 type Tab = "catat" | "rusak" | "riwayat";
 
 // SESUAIKAN DENGAN SCHEMA PRISMA
+// SESUAIKAN DENGAN SCHEMA PRISMA
 type Transaction = {
+  idTransaksi: number;
+  tanggalTransaksi: string;
+  totalPenjualan: number;
+  detailPenjualan: {
+    idDetail: number;
+    jumlah: number;
+    subtotal: number;
+    produk: {
+      namaProduk: string;
+    };
+  }[];
+};
   idTransaksi: number;
   tanggalTransaksi: string;
   totalPenjualan: number;
@@ -45,6 +58,7 @@ export default function PenjualanScreen() {
   const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
 
   const tabs: { key: Tab; label: string; route: string }[] = [
