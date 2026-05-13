@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 // GANTI DENGAN IP LAPTOPMU
-const BASE_URL = "http://192.168.1.28:5000/api";
+const BASE_URL = "http://192.168.110.115:5000/api";
 
 export default function Product() {
 
