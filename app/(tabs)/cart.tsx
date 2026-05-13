@@ -21,21 +21,7 @@ const BASE_URL = "http://192.168.110.115:5000/api";
 
 type Tab = "catat" | "rusak" | "riwayat";
 
-// SESUAIKAN DENGAN SCHEMA PRISMA
-// SESUAIKAN DENGAN SCHEMA PRISMA
 type Transaction = {
-  idTransaksi: number;
-  tanggalTransaksi: string;
-  totalPenjualan: number;
-  detailPenjualan: {
-    idDetail: number;
-    jumlah: number;
-    subtotal: number;
-    produk: {
-      namaProduk: string;
-    };
-  }[];
-};
   idTransaksi: number;
   tanggalTransaksi: string;
   totalPenjualan: number;
@@ -58,7 +44,6 @@ export default function PenjualanScreen() {
   const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
 
   const tabs: { key: Tab; label: string; route: string }[] = [
@@ -166,10 +151,24 @@ export default function PenjualanScreen() {
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.key}
-              style={[styles.tabItem, tab.key === "catat" && styles.tabItemActive]}
-              onPress={() => tab.key !== "catat" && router.push(tab.route as any)}
+              style={[
+                styles.tabItem,
+                tab.key === "catat" && styles.tabItemActive,
+              ]}
+              onPress={() => {
+                if (tab.key !== "catat") router.push(tab.route as any);
+              }}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.tabText, tab.key === "catat" && styles.tabTextActive]}>{tab.label}</Text>
+              <Text
+                style={[
+                  styles.tabText,
+                  tab.key === "catat" && styles.tabTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -225,39 +224,90 @@ export default function PenjualanScreen() {
             </View>
           )}
 
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.9}
+          >
             <Text style={styles.addButtonText}>+ Tambah Produk ke Penjualan</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
       <Modal visible={modalVisible} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>Catat Terjual</Text>
-            <Text style={styles.fieldLabel}>Pilih Produk</Text>
-            <TouchableOpacity style={styles.dropdownField} onPress={() => setDropdownOpen(!dropdownOpen)}>
-              <Text style={{ color: selectedProduct ? "#333" : "#bbb" }}>{selectedProduct?.namaProduk || "-- Pilih Produk --"}</Text>
-            </TouchableOpacity>
+  <View style={styles.modalOverlay}>
+    {/* Gunakan Pressable hanya untuk area luar saja */}
+    <Pressable 
+      style={StyleSheet.absoluteFill} 
+      onPress={() => { setModalVisible(false); setDropdownOpen(false); }} 
+    />
+    
+    <View style={styles.modalCard}>
+      <Text style={styles.modalTitle}>Catat Terjual</Text>
+      
+      <Text style={styles.fieldLabel}>Pilih Produk</Text>
+      
+      {/* Container Dropdown */}
+      <View style={{ zIndex: 5000 }}>
+        <TouchableOpacity 
+          style={styles.dropdownField} 
+          onPress={() => setDropdownOpen(!dropdownOpen)}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: selectedProduct ? "#333" : "#bbb", flex: 1 }}>
+            {selectedProduct?.namaProduk || "-- Pilih Produk --"}
+          </Text>
+          <Ionicons name={dropdownOpen ? "chevron-up" : "chevron-down"} size={16} color="#666" />
+        </TouchableOpacity>
 
-            {dropdownOpen && (
-              <View style={styles.dropdownList}>
-                {products.map((item) => (
-                  <TouchableOpacity key={item.idProduk} style={styles.dropdownItem} onPress={() => { setSelectedProduct(item); setDropdownOpen(false); }}>
-                    <Text>{item.namaProduk} (Stok: {item.stok})</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+        {dropdownOpen && (
+          <View style={styles.dropdownList}>
+            {/* Pakai ScrollView dengan props yang dipaksa agar menangkap touch */}
+            <ScrollView 
+              style={{ maxHeight: 150 }} 
+              nestedScrollEnabled={true} 
+              keyboardShouldPersistTaps="always" // Ubah jadi always agar sentuhan langsung ditangkap
+              contentContainerStyle={{ flexGrow: 1 }}
+            >
+              {products.map((item) => (
+                <TouchableOpacity 
+                  key={item.idProduk} 
+                  style={styles.dropdownItem} 
+                  onPress={() => { 
+                    setSelectedProduct(item); 
+                    setDropdownOpen(false); 
+                  }}
+                >
+                  <Text style={{ fontSize: 14 }}>
+                    {item.namaProduk} <Text style={{ color: '#888', fontSize: 12 }}>(Stok: {item.stok})</Text>
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
 
-            <Text style={styles.fieldLabel}>Jumlah</Text>
-            <TextInput style={styles.inputField} keyboardType="numeric" value={jumlah} onChangeText={setJumlah} placeholder="0" />
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitSale}>
-              <Text style={styles.submitButtonText}>Simpan</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Bagian Input Jumlah */}
+      <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Jumlah</Text>
+      <TextInput 
+        style={styles.inputField} 
+        keyboardType="numeric" 
+        value={jumlah} 
+        onChangeText={setJumlah} 
+        placeholder="0" 
+      />
+      
+      <TouchableOpacity 
+        style={styles.submitButton} 
+        onPress={handleSubmitSale} 
+        activeOpacity={0.8}
+      >
+        <Text style={styles.submitButtonText}>Simpan</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -281,16 +331,37 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingBottom: 20 },
   card: { backgroundColor: WHITE, borderRadius: 20, padding: 48, alignItems: "center", elevation: 6, marginBottom: 24 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: "#2a2a2a" },
-  addButton: { backgroundColor: PINK_BUTTON, borderRadius: 50, paddingVertical: 16, alignItems: "center", elevation: 4 },
+  addButton: { backgroundColor: PINK_BUTTON, borderRadius: 50, paddingVertical: 16, alignItems: "center", elevation: 2 },
   addButtonText: { color: RED_PRIMARY, fontWeight: "700" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
-  modalCard: { backgroundColor: WHITE, borderRadius: 24, padding: 24, width: "90%" },
+  modalCard: { backgroundColor: WHITE, borderRadius: 24, padding: 24, width: "90%"},
   modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 20 },
   fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
-  dropdownField: { borderSize: 1, borderColor: "#eee", borderWidth: 1, borderRadius: 12, padding: 13, marginBottom: 16 },
-  dropdownList: { borderSize: 1, borderColor: "#eee", borderWidth: 1, borderRadius: 12, marginBottom: 16, maxHeight: 120 },
-  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  inputField: { borderWidth: 1, borderColor: "#eee", borderRadius: 12, padding: 13, marginBottom: 20 },
+  dropdownField: { 
+    borderWidth: 1, 
+    borderColor: "#eee", 
+    borderRadius: 12, 
+    padding: 13, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    backgroundColor: '#fafafa'
+  },
+  dropdownList: { 
+  position: 'absolute', 
+  top: 52, 
+  left: 0, 
+  right: 0, 
+  borderWidth: 1, 
+  borderColor: "#eee", 
+  borderRadius: 12, 
+  backgroundColor: '#fff', 
+  elevation: 10,       // Naikkan elevation agar di atas segalanya di Android
+  zIndex: 10000,       // Naikkan zIndex untuk iOS
+  maxHeight: 160,      // Batasi tinggi
+},
+  dropdownItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: "#f9f9f9" },
+  inputField: { borderWidth: 1, borderColor: "#eee", borderRadius: 12, padding: 13, marginBottom: 20, backgroundColor: '#fafafa' },
   submitButton: { backgroundColor: RED_PRIMARY, borderRadius: 50, paddingVertical: 16, alignItems: "center" },
   submitButtonText: { color: WHITE, fontWeight: "700" },
   txCard: { backgroundColor: WHITE, borderRadius: 20, padding: 20, elevation: 6, marginBottom: 24 },
