@@ -7,7 +7,7 @@ export default function Index() {
 
   useEffect(() => {
     setTimeout(() => {
-      router.replace("/welcome");
+      router.replace("/Welcome");
     }, 3000);
   }, []);
 
