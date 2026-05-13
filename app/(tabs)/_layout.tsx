@@ -1,11 +1,12 @@
-import { Tabs } from "expo-router";
 import React from "react";
+import { Tabs } from "expo-router";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { HapticTab } from "@/components/haptic-tab";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function TabLayout() {
+import { HapticTab } from "@/components/haptic-tab";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { TransactionProvider } from "@/context/TransactionContext";
+
+function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -31,7 +32,7 @@ export default function TabLayout() {
         name="Dashboard"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color }) => (
             <Ionicons name="home-outline" size={22} color={color} />
           ),
         }}
@@ -76,7 +77,9 @@ export default function TabLayout() {
           ),
         }}
       />
-         <Tabs.Screen
+
+      {/* hidden route */}
+      <Tabs.Screen
         name="rusak-kadaluarsa"
         options={{ href: null }}
       />
@@ -86,6 +89,13 @@ export default function TabLayout() {
         options={{ href: null }}
       />
     </Tabs>
-    
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <TransactionProvider>
+      <TabLayout />
+    </TransactionProvider>
   );
 }
