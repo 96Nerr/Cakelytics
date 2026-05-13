@@ -58,9 +58,9 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="analytics"
+        name="manajemen"
         options={{
-          title: "Analytics",
+          title: "Manajemen",
           tabBarIcon: ({ color }) => (
             <Ionicons name="bar-chart-outline" size={22} color={color} />
           ),
@@ -68,9 +68,9 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="modal"
+        name="laporan"
         options={{
-          title: "Stok",
+          title: "Laporan",
           tabBarIcon: ({ color }) => (
             <Feather name="layers" size={22} color={color} />
           ),
