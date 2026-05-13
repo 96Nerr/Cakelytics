@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Platform,
@@ -14,20 +14,27 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
+
+const BASE_URL = "http://192.168.110.115:5000/api";
 
 type Tab = "catat" | "rusak" | "riwayat";
 
+// SESUAIKAN DENGAN SCHEMA PRISMA
 type Transaction = {
-  id: number;
-  trxCode: string;
-  productName: string;
-  qty: number;
-  total: number;
-  date: string;
+  idTransaksi: number;
+  tanggalTransaksi: string;
+  totalPenjualan: number;
+  detailPenjualan: {
+    idDetail: number;
+    jumlah: number;
+    subtotal: number;
+    produk: {
+      namaProduk: string;
+    };
+  }[];
 };
-
-let trxCounter = 18; // mulai dari TRX19 seperti figma
 
 export default function PenjualanScreen() {
   const router = useRouter();
@@ -38,6 +45,7 @@ export default function PenjualanScreen() {
   const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
 
   const tabs: { key: Tab; label: string; route: string }[] = [
     { key: "catat", label: "Catat Jual", route: "/cart" },
@@ -45,55 +53,79 @@ export default function PenjualanScreen() {
     { key: "riwayat", label: "Riwayat", route: "/riwayat" },
   ];
 
-  const [products] = useState([
-    { id: 1, name: "Brownies" },
-    { id: 2, name: "Tiramisu" },
-    { id: 3, name: "Cheesecake" },
-    { id: 4, name: "Soft Cookies" },
-    { id: 5, name: "Cheesecake Slice" },
-  ]);
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
 
-  // Format tanggal "25/04/2026"
-  const getFormattedDate = () => {
-    const now = new Date();
-    return `${String(now.getDate()).padStart(2, "0")}/${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}/${now.getFullYear()}`;
+  const fetchInitialData = async () => {
+    await fetchProducts();
+    await fetchTransactions();
   };
 
-  // Format "Today\n25/04/2026"
-  const getTodayHeader = () => {
-    return getFormattedDate();
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/produk`);
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Gagal ambil produk:", error);
+    }
   };
 
-  // Format rupiah "Rp. 15.000"
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/transaksi`);
+      const data = await response.json();
+      setTransactions(data);
+    } catch (error) {
+      console.error("Gagal ambil transaksi:", error);
+    }
+  };
+
+  const handleSubmitSale = async () => {
+    if (!selectedProduct || !jumlah) {
+      Alert.alert("Warning", "Pilih produk dan isi jumlah!");
+      return;
+    }
+
+    const qty = Number(jumlah);
+    const totalHarga = selectedProduct.hargaJual * qty;
+
+    try {
+      const response = await fetch(`${BASE_URL}/transaksi`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          totalPenjualan: totalHarga,
+          detailPesanan: [
+            {
+              idProduk: selectedProduct.idProduk,
+              jumlah: qty,
+              hargaModalSaatIni: selectedProduct.hargaModal,
+              hargaJualSaatIni: selectedProduct.hargaJual,
+              subtotal: totalHarga
+            }
+          ]
+        }),
+      });
+
+      if (response.ok) {
+        Alert.alert("Sukses", "Penjualan berhasil dicatat!");
+        setModalVisible(false);
+        setJumlah("");
+        setSelectedProduct(null);
+        fetchTransactions();
+        fetchProducts();
+      } else {
+        Alert.alert("Gagal", "Terjadi kesalahan saat menyimpan");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Koneksi terputus");
+    }
+  };
+
   const formatRupiah = (amount: number) => {
-    return (
-      "Rp. " +
-      amount
-        .toLocaleString("id-ID", { minimumFractionDigits: 0 })
-        .replace(/\./g, ".")
-    );
-  };
-
-  const handleSubmitSale = () => {
-    if (!selectedProduct || !jumlah) return;
-
-    trxCounter += 1;
-
-    const newTransaction: Transaction = {
-      id: Date.now(),
-      trxCode: `TRX${trxCounter}`,
-      productName: selectedProduct.name,
-      qty: Number(jumlah),
-      total: Number(jumlah) * 5000,
-      date: getFormattedDate(),
-    };
-
-    setTransactions((prev) => [newTransaction, ...prev].slice(0, 5));
-    setSelectedProduct(null);
-    setJumlah("");
-    setModalVisible(false);
+    return "Rp. " + (amount || 0).toLocaleString("id-ID");
   };
 
   const toggleExpand = (id: number) => {
@@ -103,245 +135,111 @@ export default function PenjualanScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#E8848D" />
-
-      {/* BACKGROUND */}
       <View style={StyleSheet.absoluteFillObject}>
         <LinearGradient colors={["#E8848D", "#FAD8DB"]} style={{ flex: 1 }} />
       </View>
 
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.appTitle}>
-            Cak<Text style={styles.appTitleDot}>e</Text>litycs
-          </Text>
+          <Text style={styles.appTitle}>Cakelitycs</Text>
         </View>
 
-        {/* Section Title */}
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
-          <Ionicons
-            name="cart-outline"
-            size={20}
-            color="#333"
-            style={{ marginLeft: 6 }}
-          />
         </View>
 
-        {/* Tab Selector */}
         <View style={styles.tabContainer}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.key}
-              style={[
-                styles.tabItem,
-                tab.key === "catat" && styles.tabItemActive,
-              ]}
-              onPress={() => {
-                if (tab.key !== "catat") router.push(tab.route as any);
-              }}
-              activeOpacity={0.8}
+              style={[styles.tabItem, tab.key === "catat" && styles.tabItemActive]}
+              onPress={() => tab.key !== "catat" && router.push(tab.route as any)}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  tab.key === "catat" && styles.tabTextActive,
-                ]}
-                numberOfLines={1}
-              >
-                {tab.label}
-              </Text>
+              <Text style={[styles.tabText, tab.key === "catat" && styles.tabTextActive]}>{tab.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Main Content */}
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {transactions.length === 0 ? (
-            /* ── Empty State ── */
             <View style={styles.card}>
-              <View style={styles.cartIllustration}>
-                <Ionicons name="cart-outline" size={64} color="#ccc" />
-              </View>
               <Text style={styles.emptyTitle}>Penjualan Masih Kosong</Text>
-              <Text style={styles.emptySubtitle}>
-                Tap tombol dibawah untuk menambahkan produk terjual
-              </Text>
             </View>
           ) : (
-            /* ── Transaction List Card ── */
             <View style={styles.txCard}>
-              {/* Today Header */}
               <View style={styles.txDateHeader}>
-                <Text style={styles.txTodayLabel}>Today</Text>
-                <Text style={styles.txTodayDate}>{getTodayHeader()}</Text>
+                <Text style={styles.txTodayLabel}>Riwayat Terakhir</Text>
               </View>
 
               {transactions.map((tx, index) => {
-                const isExpanded = expandedTrxId === tx.id;
-                const isFirst = index === 0;
-
+                const isExpanded = expandedTrxId === tx.idTransaksi;
+                const firstDetail = tx.detailPenjualan?.[0];
+                
                 return (
-                  <View key={tx.id}>
-                    {/* Row utama */}
-                    <TouchableOpacity
-                      style={styles.txRow}
-                      onPress={() => toggleExpand(tx.id)}
-                      activeOpacity={0.7}
-                    >
-                      {/* Kiri */}
+                  <View key={tx.idTransaksi}>
+                    <TouchableOpacity style={styles.txRow} onPress={() => toggleExpand(tx.idTransaksi)}>
                       <View style={styles.txLeft}>
                         <View style={styles.txNameRow}>
-                          <Text style={styles.txName}>
-                            Transaksi {tx.trxCode}
-                          </Text>
-                          {/* Badge merah hanya untuk transaksi pertama saat expanded */}
-                          {isFirst && isExpanded && (
-                            <View style={styles.txBadge}>
-                              <Text style={styles.txBadgeText}>
-                                {tx.qty} pcs
-                              </Text>
-                            </View>
+                          <Text style={styles.txName}>{firstDetail?.produk?.namaProduk || "Produk"}</Text>
+                          {isExpanded && (
+                             <View style={styles.txBadge}><Text style={styles.txBadgeText}>{firstDetail?.jumlah} pcs</Text></View>
                           )}
                         </View>
-                        <Text style={styles.txDate}>{tx.date}</Text>
-
-                        {/* Detail expanded */}
+                        <Text style={styles.txDate}>{new Date(tx.tanggalTransaksi).toLocaleDateString("id-ID")}</Text>
+                        
                         {isExpanded && (
                           <View style={styles.txExpandedDetail}>
-                            <View style={styles.txDetailRow}>
-                              <Text style={styles.txDetailItem}>
-                                {tx.productName} x {tx.qty}
-                              </Text>
-                              <Text style={styles.txDetailPrice}>
-                                {formatRupiah(5000 * tx.qty)}
-                              </Text>
-                            </View>
-                            <View style={styles.txDetailRow}>
-                              <Text style={styles.txDetailItem}>
-                                {tx.qty} pcs
-                              </Text>
-                              <Text style={styles.txDetailPriceHighlight}>
-                                {formatRupiah(tx.total)}
-                              </Text>
+                            {tx.detailPenjualan.map((item, i) => (
+                              <View key={i} style={styles.txDetailRow}>
+                                <Text style={styles.txDetailItem}>{item.produk?.namaProduk} x {item.jumlah}</Text>
+                                <Text style={styles.txDetailPrice}>{formatRupiah(item.subtotal)}</Text>
+                              </View>
+                            ))}
+                            <View style={{ marginTop: 5, borderTopWidth: 1, borderColor: '#eee', paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <Text style={{ fontWeight: 'bold' }}>TOTAL</Text>
+                                <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>{formatRupiah(tx.totalPenjualan)}</Text>
                             </View>
                           </View>
                         )}
                       </View>
-
-                      {/* Kanan: total */}
-                      {!isExpanded && (
-                        <Text style={styles.txTotal}>
-                          {formatRupiah(tx.total)}
-                        </Text>
-                      )}
+                      {!isExpanded && <Text style={styles.txTotal}>{formatRupiah(tx.totalPenjualan)}</Text>}
                     </TouchableOpacity>
-
-                    {/* Separator */}
-                    {index < transactions.length - 1 && (
-                      <View style={styles.txSeparator} />
-                    )}
+                    {index < transactions.length - 1 && <View style={styles.txSeparator} />}
                   </View>
                 );
               })}
             </View>
           )}
 
-          {/* Add Button */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.addButtonText}>
-              + Tambah Produk ke Penjualan
-            </Text>
+          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+            <Text style={styles.addButtonText}>+ Tambah Produk ke Penjualan</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* ── Modal ── */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setModalVisible(false)}
-        >
-          <Pressable
-            style={styles.modalCard}
-            onPress={(e) => e.stopPropagation()}
-          >
-            {/* Modal cart icon */}
-            <View style={styles.modalCartIcon}>
-              <Ionicons name="cart-outline" size={36} color="#ccc" />
-            </View>
-
-            <Text style={styles.modalTitle}>Catat Produk Terjual</Text>
-            <Text style={styles.modalSubtitle}>
-              Catat Produksi disini Biar Sistem Kamu Up To Date
-            </Text>
-
-            {/* Pilih Produk */}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Catat Terjual</Text>
             <Text style={styles.fieldLabel}>Pilih Produk</Text>
-            <TouchableOpacity
-              style={styles.dropdownField}
-              onPress={() => setDropdownOpen(!dropdownOpen)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.dropdownText,
-                  selectedProduct ? styles.dropdownTextSelected : null,
-                ]}
-              >
-                {selectedProduct?.name || "-- Pilih Produk --"}
-              </Text>
-              <Ionicons name="chevron-down" size={16} color="#bbb" />
+            <TouchableOpacity style={styles.dropdownField} onPress={() => setDropdownOpen(!dropdownOpen)}>
+              <Text style={{ color: selectedProduct ? "#333" : "#bbb" }}>{selectedProduct?.namaProduk || "-- Pilih Produk --"}</Text>
             </TouchableOpacity>
 
-            {/* Dropdown List */}
             {dropdownOpen && (
               <View style={styles.dropdownList}>
                 {products.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedProduct(item);
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{item.name}</Text>
+                  <TouchableOpacity key={item.idProduk} style={styles.dropdownItem} onPress={() => { setSelectedProduct(item); setDropdownOpen(false); }}>
+                    <Text>{item.namaProduk} (Stok: {item.stok})</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
 
-            {/* Jumlah Produk */}
-            <Text style={styles.fieldLabel}>Jumlah Produk</Text>
-            <TextInput
-              style={styles.inputField}
-              placeholder="Contoh : 0"
-              placeholderTextColor="#bbb"
-              keyboardType="numeric"
-              value={jumlah}
-              onChangeText={setJumlah}
-            />
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={styles.submitButton}
-              activeOpacity={0.85}
-              onPress={handleSubmitSale}
-            >
-              <Text style={styles.submitButtonText}>Tambah Produk Terjual</Text>
+            <Text style={styles.fieldLabel}>Jumlah</Text>
+            <TextInput style={styles.inputField} keyboardType="numeric" value={jumlah} onChangeText={setJumlah} placeholder="0" />
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitSale}>
+              <Text style={styles.submitButtonText}>Simpan</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
