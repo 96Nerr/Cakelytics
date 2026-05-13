@@ -18,18 +18,87 @@ import {
 
 type Tab = "catat" | "rusak" | "riwayat";
 
+type Transaction = {
+  id: number;
+  trxCode: string;
+  productName: string;
+  qty: number;
+  total: number;
+  date: string;
+};
+
+let trxCounter = 18; // mulai dari TRX19 seperti figma
+
 export default function PenjualanScreen() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [jumlah, setJumlah] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
+
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const tabs: { key: Tab; label: string; route: string }[] = [
     { key: "catat", label: "Catat Jual", route: "/cart" },
     { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
     { key: "riwayat", label: "Riwayat", route: "/riwayat" },
   ];
+
+  const [products] = useState([
+    { id: 1, name: "Brownies" },
+    { id: 2, name: "Tiramisu" },
+    { id: 3, name: "Cheesecake" },
+    { id: 4, name: "Soft Cookies" },
+    { id: 5, name: "Cheesecake Slice" },
+  ]);
+
+  // Format tanggal "25/04/2026"
+  const getFormattedDate = () => {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2, "0")}/${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}/${now.getFullYear()}`;
+  };
+
+  // Format "Today\n25/04/2026"
+  const getTodayHeader = () => {
+    return getFormattedDate();
+  };
+
+  // Format rupiah "Rp. 15.000"
+  const formatRupiah = (amount: number) => {
+    return (
+      "Rp. " +
+      amount
+        .toLocaleString("id-ID", { minimumFractionDigits: 0 })
+        .replace(/\./g, ".")
+    );
+  };
+
+  const handleSubmitSale = () => {
+    if (!selectedProduct || !jumlah) return;
+
+    trxCounter += 1;
+
+    const newTransaction: Transaction = {
+      id: Date.now(),
+      trxCode: `TRX${trxCounter}`,
+      productName: selectedProduct.name,
+      qty: Number(jumlah),
+      total: Number(jumlah) * 5000,
+      date: getFormattedDate(),
+    };
+
+    setTransactions((prev) => [newTransaction, ...prev].slice(0, 5));
+    setSelectedProduct(null);
+    setJumlah("");
+    setModalVisible(false);
+  };
+
+  const toggleExpand = (id: number) => {
+    setExpandedTrxId((prev) => (prev === id ? null : id));
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -59,7 +128,7 @@ export default function PenjualanScreen() {
           />
         </View>
 
-        {/* Tab Selector — navigates via router */}
+        {/* Tab Selector */}
         <View style={styles.tabContainer}>
           {tabs.map((tab) => (
             <TouchableOpacity
@@ -91,16 +160,95 @@ export default function PenjualanScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Empty Cart Card */}
-          <View style={styles.card}>
-            <View style={styles.cartIllustration}>
-              <Ionicons name="cart-outline" size={64} color="#ccc" />
+          {transactions.length === 0 ? (
+            /* ── Empty State ── */
+            <View style={styles.card}>
+              <View style={styles.cartIllustration}>
+                <Ionicons name="cart-outline" size={64} color="#ccc" />
+              </View>
+              <Text style={styles.emptyTitle}>Penjualan Masih Kosong</Text>
+              <Text style={styles.emptySubtitle}>
+                Tap tombol dibawah untuk menambahkan produk terjual
+              </Text>
             </View>
-            <Text style={styles.emptyTitle}>Keranjang Masih Kosong</Text>
-            <Text style={styles.emptySubtitle}>
-              Tap tombol dibawah untuk menambahkan produk
-            </Text>
-          </View>
+          ) : (
+            /* ── Transaction List Card ── */
+            <View style={styles.txCard}>
+              {/* Today Header */}
+              <View style={styles.txDateHeader}>
+                <Text style={styles.txTodayLabel}>Today</Text>
+                <Text style={styles.txTodayDate}>{getTodayHeader()}</Text>
+              </View>
+
+              {transactions.map((tx, index) => {
+                const isExpanded = expandedTrxId === tx.id;
+                const isFirst = index === 0;
+
+                return (
+                  <View key={tx.id}>
+                    {/* Row utama */}
+                    <TouchableOpacity
+                      style={styles.txRow}
+                      onPress={() => toggleExpand(tx.id)}
+                      activeOpacity={0.7}
+                    >
+                      {/* Kiri */}
+                      <View style={styles.txLeft}>
+                        <View style={styles.txNameRow}>
+                          <Text style={styles.txName}>
+                            Transaksi {tx.trxCode}
+                          </Text>
+                          {/* Badge merah hanya untuk transaksi pertama saat expanded */}
+                          {isFirst && isExpanded && (
+                            <View style={styles.txBadge}>
+                              <Text style={styles.txBadgeText}>
+                                {tx.qty} pcs
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.txDate}>{tx.date}</Text>
+
+                        {/* Detail expanded */}
+                        {isExpanded && (
+                          <View style={styles.txExpandedDetail}>
+                            <View style={styles.txDetailRow}>
+                              <Text style={styles.txDetailItem}>
+                                {tx.productName} x {tx.qty}
+                              </Text>
+                              <Text style={styles.txDetailPrice}>
+                                {formatRupiah(5000 * tx.qty)}
+                              </Text>
+                            </View>
+                            <View style={styles.txDetailRow}>
+                              <Text style={styles.txDetailItem}>
+                                {tx.qty} pcs
+                              </Text>
+                              <Text style={styles.txDetailPriceHighlight}>
+                                {formatRupiah(tx.total)}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Kanan: total */}
+                      {!isExpanded && (
+                        <Text style={styles.txTotal}>
+                          {formatRupiah(tx.total)}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Separator */}
+                    {index < transactions.length - 1 && (
+                      <View style={styles.txSeparator} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
           {/* Add Button */}
           <TouchableOpacity
@@ -109,13 +257,13 @@ export default function PenjualanScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.addButtonText}>
-              + Tambah Produk ke Keranjang
+              + Tambah Produk ke Penjualan
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* Modal */}
+      {/* ── Modal ── */}
       <Modal
         visible={modalVisible}
         transparent
@@ -135,7 +283,7 @@ export default function PenjualanScreen() {
               <Ionicons name="cart-outline" size={36} color="#ccc" />
             </View>
 
-            <Text style={styles.modalTitle}>Input Produk Terjual</Text>
+            <Text style={styles.modalTitle}>Catat Produk Terjual</Text>
             <Text style={styles.modalSubtitle}>
               Catat Produksi disini Biar Sistem Kamu Up To Date
             </Text>
@@ -153,10 +301,28 @@ export default function PenjualanScreen() {
                   selectedProduct ? styles.dropdownTextSelected : null,
                 ]}
               >
-                {selectedProduct || "-- Pilih Produk --"}
+                {selectedProduct?.name || "-- Pilih Produk --"}
               </Text>
               <Ionicons name="chevron-down" size={16} color="#bbb" />
             </TouchableOpacity>
+
+            {/* Dropdown List */}
+            {dropdownOpen && (
+              <View style={styles.dropdownList}>
+                {products.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedProduct(item);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Jumlah Produk */}
             <Text style={styles.fieldLabel}>Jumlah Produk</Text>
@@ -173,7 +339,7 @@ export default function PenjualanScreen() {
             <TouchableOpacity
               style={styles.submitButton}
               activeOpacity={0.85}
-              onPress={() => setModalVisible(false)}
+              onPress={handleSubmitSale}
             >
               <Text style={styles.submitButtonText}>Tambah Produk Terjual</Text>
             </TouchableOpacity>
@@ -257,6 +423,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 20,
   },
+
+  // ── Empty State Card ──────────────────────────────────────────────
   card: {
     backgroundColor: WHITE,
     borderRadius: 20,
@@ -286,6 +454,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 19,
   },
+
+  // ── Add Button ────────────────────────────────────────────────────
   addButton: {
     backgroundColor: PINK_BUTTON,
     borderRadius: 50,
@@ -302,6 +472,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
   },
+
+  // ── Modal ─────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -356,6 +528,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#fafafa",
   },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: "#eee",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f2f2f2",
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: "#333",
+  },
   dropdownText: {
     fontSize: 14,
     color: "#bbb",
@@ -390,5 +579,109 @@ const styles = StyleSheet.create({
     color: WHITE,
     fontWeight: "700",
     fontSize: 15,
+  },
+
+  // ── Transaction List Card ─────────────────────────────────────────
+  txCard: {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    shadowColor: "#c06070",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
+    marginBottom: 24,
+  },
+  txDateHeader: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  txTodayLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2a2a2a",
+  },
+  txTodayDate: {
+    fontSize: 11,
+    color: "#bbb",
+    marginTop: 2,
+  },
+  txRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  txLeft: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  txNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 3,
+  },
+  txName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#2a2a2a",
+  },
+  txBadge: {
+    backgroundColor: RED_PRIMARY,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  txBadgeText: {
+    fontSize: 10,
+    color: WHITE,
+    fontWeight: "700",
+  },
+  txDate: {
+    fontSize: 11,
+    color: "#bbb",
+    marginBottom: 2,
+  },
+  txTotal: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#4CAF50",
+    marginTop: 2,
+  },
+  txSeparator: {
+    height: 1,
+    backgroundColor: "#f0f0f0",
+  },
+
+  // ── Expanded Detail ───────────────────────────────────────────────
+  txExpandedDetail: {
+    marginTop: 8,
+    backgroundColor: "#fafafa",
+    borderRadius: 10,
+    padding: 10,
+    gap: 6,
+  },
+  txDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  txDetailItem: {
+    fontSize: 11,
+    color: "#888",
+    flex: 1,
+  },
+  txDetailPrice: {
+    fontSize: 11,
+    color: "#888",
+    fontWeight: "600",
+  },
+  txDetailPriceHighlight: {
+    fontSize: 12,
+    color: "#4CAF50",
+    fontWeight: "700",
   },
 });
