@@ -101,26 +101,26 @@ const styles = StyleSheet.create({
   },
   
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingTop: 30,
+    paddingHorizontal: 24,
+    marginBottom: 10,
   },
 
   logo: {
     color: "white",
-    fontSize: 26,
+    fontSize: 30,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 1,
   },
 
   date: {
     color: "#FFEAEA",
-    marginBottom: 5,
+    marginBottom: 0.1,
   },
 
   greeting: {
     color: "white",
-    fontSize: 30,
+    fontSize: 17,
     fontWeight: "bold",
   },
 
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 25,
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 15,
     elevation: 5,
   },
 
@@ -143,12 +143,12 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "bold",
     color: "#111",
-    marginBottom: 10,
+    marginBottom: 2,
   },
 
   increase: {
     color: "green",
-    fontSize: 14,
+    fontSize: 13,
   },
 
   warningRed: {
@@ -221,9 +221,9 @@ warningDetail: {
   },
 
  statsCard: {
-  backgroundColor: "#FFD7D7",
+  backgroundColor: "#f9e1e1",
   width: "48%",
-  borderRadius: 20,
+  borderRadius: 19,
   padding: 3,
   flexDirection: "row",   // ✅ ikon kiri, teks kanan
   alignItems: "center",
@@ -244,17 +244,20 @@ statsTitle: {
   fontWeight: "600",
   color: "#b12727",
   marginBottom: 2,
+  textAlign: "center",
 },
 
 statsNumber: {
   fontSize: 20,
   fontWeight: "bold",
   color: "#111",
+  textAlign: "center",
 },
 
 statsLabel: {
   color: "#666",
   fontSize: 13,
+  textAlign: "center",
 },
 
   bestSellerCard: {
