@@ -41,7 +41,7 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E88D8D",
+    backgroundColor: "#e65994",
   },
 
   topSection: {

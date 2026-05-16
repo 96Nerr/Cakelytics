@@ -117,6 +117,7 @@ export default function PenjualanScreen() {
     });
   };
 
+<<<<<<< HEAD
   const updateQty = (productId: number, delta: number) => {
     setCartItems((prev) => {
       return prev
@@ -127,6 +128,15 @@ export default function PenjualanScreen() {
         )
         .filter((i) => i.qty > 0);
     });
+=======
+  const formatRupiah = (amount: number) => {
+    return (
+      "Rp " +
+      amount.toLocaleString("id-ID", {
+        minimumFractionDigits: 0,
+      })
+    );
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
   };
 
   const removeItem = (productId: number) => {
@@ -178,29 +188,49 @@ export default function PenjualanScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+<<<<<<< HEAD
       <StatusBar barStyle="dark-content" backgroundColor="#E8848D" />
 
       {/* BACKGROUND */}
       <View style={StyleSheet.absoluteFillObject}>
         <LinearGradient colors={["#E8848D", "#FAD8DB"]} style={{ flex: 1 }} />
+=======
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#e65994"
+      />
+
+      {/* BACKGROUND */}
+      <View style={StyleSheet.absoluteFillObject}>
+        <LinearGradient
+          colors={["#e65994", "#ffffff"]}
+          style={{ flex: 1 }}
+        />
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
       </View>
 
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.appTitle}>
-            Cak<Text style={styles.appTitleDot}>e</Text>litycs
+          <Text style={styles.appName}>
+            Cak<Text style={styles.appTitleDot}>e</Text>lytics
           </Text>
         </View>
 
         {/* Section Title */}
+<<<<<<< HEAD
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
+=======
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>PENJUALAN</Text>
+
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
           <Ionicons
             name="cart-outline"
-            size={20}
-            color="#333"
-            style={{ marginLeft: 6 }}
+            size={18}
+            color="#ffffff"
+            style={{ marginLeft: -2 }}
           />
         </View>
 
@@ -216,7 +246,7 @@ export default function PenjualanScreen() {
               onPress={() => {
                 if (tab.key !== "catat") router.push(tab.route as any);
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               <Text
                 style={[
@@ -236,6 +266,7 @@ export default function PenjualanScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+<<<<<<< HEAD
           {/* ══════════════════════════════════════════
               KONDISI A — Belum ada transaksi sama sekali
               Tampilkan: empty state card + keranjang aktif (jika ada) + tombol tambah
@@ -497,6 +528,95 @@ export default function PenjualanScreen() {
                                   {formatRupiah(tx.total)}
                                 </Text>
                               </View>
+=======
+          {transactions.length === 0 ? (
+            <View style={styles.card}>
+              <View style={styles.cartIllustration}>
+                <Ionicons
+                  name="cart-outline"
+                  size={56}
+                  color="#C7C7CC"
+                />
+              </View>
+
+              <Text style={styles.emptyTitle}>
+                Penjualan Masih Kosong
+              </Text>
+
+              <Text style={styles.emptySubtitle}>
+                Tap tombol di bawah untuk menambahkan produk terjual
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.txCard}>
+              <View style={styles.txDateHeader}>
+                <Text style={styles.txTodayLabel}>Today</Text>
+                <Text style={styles.txTodayDate}>{getTodayHeader()}</Text>
+              </View>
+
+              {transactions.map((tx: any, index: number) => {
+                const isExpanded = expandedTrxId === tx.id;
+                const isFirst = index === 0;
+
+                return (
+                  <View key={tx.id}>
+                    <TouchableOpacity
+                      style={styles.txRow}
+                      onPress={() => toggleExpand(tx.id)}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.txLeft}>
+                        <View style={styles.txNameRow}>
+                          <Text style={styles.txName}>
+                            Transaksi {tx.trxCode}
+                          </Text>
+
+                          {isFirst && isExpanded && (
+                            <View style={styles.txBadge}>
+                              <Text style={styles.txBadgeText}>
+                                {tx.items.reduce(
+                                  (sum: number, item: any) => sum + item.qty,
+                                  0
+                                )}{" "}
+                                pcs
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={styles.txDate}>{tx.date}</Text>
+
+                        {isExpanded && (
+                          <View style={styles.txExpandedDetail}>
+                            {tx.items.map((item: any, i: number) => (
+                              <View key={i} style={styles.txDetailRow}>
+                                <Text style={styles.txDetailItem}>
+                                  {item.productName} x {item.qty}
+                                </Text>
+                                <Text style={styles.txDetailPrice}>
+                                  {formatRupiah(item.subtotal ?? 0)}
+                                </Text>
+                              </View>
+                            ))}
+
+                            <View
+                              style={[
+                                styles.txDetailRow,
+                                {
+                                  marginTop: 8,
+                                  borderTopWidth: 1,
+                                  borderTopColor: "#E5E5EA",
+                                  paddingTop: 6,
+                                },
+                              ]}
+                            >
+                              <Text style={[styles.txDetailItem, { fontWeight: "600" }]}>
+                                Total
+                              </Text>
+                              <Text style={styles.txDetailPriceHighlight}>
+                                {formatRupiah(tx.total)}
+                              </Text>
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
                             </View>
                           )}
                         </View>
@@ -516,6 +636,7 @@ export default function PenjualanScreen() {
                 })}
               </View>
 
+<<<<<<< HEAD
               {/* Tombol tambah — di bawah list transaksi */}
               <TouchableOpacity
                 style={styles.addButton}
@@ -527,6 +648,39 @@ export default function PenjualanScreen() {
                 </Text>
               </TouchableOpacity>
             </>
+=======
+                    {index < transactions.length - 1 && (
+                      <View style={styles.txSeparator} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Add Button */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.addButtonText}>
+              + Tambah Produk ke Penjualan
+            </Text>
+          </TouchableOpacity>
+
+          {/* Checkout */}
+          {cartItems.length > 0 && (
+            <TouchableOpacity
+              style={[styles.submitButton, { marginTop: 16 }]}
+              onPress={handleSubmitSale}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.submitButtonText}>
+                Checkout ({cartItems.length} Item)
+              </Text>
+            </TouchableOpacity>
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
           )}
         </ScrollView>
       </View>
@@ -537,17 +691,27 @@ export default function PenjualanScreen() {
       <Modal
         visible={bottomSheetVisible}
         transparent
+<<<<<<< HEAD
         animationType="slide"
         onRequestClose={() => setBottomSheetVisible(false)}
       >
         <Pressable
           style={styles.bsOverlay}
           onPress={() => setBottomSheetVisible(false)}
+=======
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalVisible(false)}
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
         >
           <Pressable
             style={styles.bsContainer}
             onPress={(e) => e.stopPropagation()}
           >
+<<<<<<< HEAD
             {/* Handle */}
             <View style={styles.bsHandle} />
 
@@ -654,6 +818,79 @@ export default function PenjualanScreen() {
                 <Text style={styles.cmConfirmText}>Ya, Konfirmasi!</Text>
               </TouchableOpacity>
             </View>
+=======
+            <View style={styles.modalCartIcon}>
+              <Ionicons
+                name="cart-outline"
+                size={32}
+                color="#C7C7CC"
+              />
+            </View>
+
+            <Text style={styles.modalTitle}>Catat Produk Terjual</Text>
+            <Text style={styles.modalSubtitle}>
+              Catat penjualan di sini agar data pembukuan up-to-date.
+            </Text>
+
+            <Text style={styles.fieldLabel}>Pilih Produk</Text>
+            <TouchableOpacity
+              style={styles.dropdownField}
+              onPress={() => setDropdownOpen(!dropdownOpen)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  selectedProduct && styles.dropdownTextSelected,
+                ]}
+              >
+                {selectedProduct?.name || "-- Pilih Produk --"}
+              </Text>
+              <Ionicons
+                name={dropdownOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+
+            {dropdownOpen && (
+              <View style={styles.dropdownList}>
+                {products.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedProduct(item);
+                      setDropdownOpen(false);
+                    }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <Text style={styles.fieldLabel}>Jumlah Produk</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Contoh : 0"
+              placeholderTextColor="#C7C7CC"
+              keyboardType="numeric"
+              value={jumlah}
+              onChangeText={setJumlah}
+            />
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              activeOpacity={0.8}
+              onPress={handleAddToCart}
+            >
+              <Text style={styles.submitButtonText}>
+                Tambah Produk Terjual
+              </Text>
+            </TouchableOpacity>
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
           </Pressable>
         </Pressable>
       </Modal>
@@ -667,6 +904,7 @@ const WHITE = "#FFFFFF";
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   safeArea: { flex: 1 },
 
   container: {
@@ -676,33 +914,59 @@ const styles = StyleSheet.create({
   },
 
   header: { marginBottom: 2 },
-
-  appTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#2a2a2a",
-    letterSpacing: 0.3,
+=======
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === "android" ? 44 : 20,
+    paddingHorizontal: 24,
   },
 
-  appTitleDot: { color: "#E05A6A" },
+  header: {
+    marginBottom: 4,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
-  sectionTitleRow: {
+  appName: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    lineHeight: 34,
+  },
+
+<<<<<<< HEAD
+  appTitleDot: { color: "#E05A6A" },
+=======
+  appTitleDot: {
+    color: WHITE,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
+
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
-    marginBottom: 12,
+    gap: 8,
+    marginTop: 2,
+    marginBottom: 20,
   },
 
-  sectionTitle: {
-    fontSize: 16,
+  title: {
+    color: "white",
+    fontSize: 15,
     fontWeight: "700",
-    color: "#2a2a2a",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 
   tabContainer: {
     flexDirection: "row",
+<<<<<<< HEAD
     backgroundColor: "rgba(255,255,255,0.35)",
+=======
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
     borderRadius: 50,
     padding: 4,
     marginBottom: 20,
@@ -710,49 +974,87 @@ const styles = StyleSheet.create({
 
   tabItem: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 4,
     borderRadius: 50,
     alignItems: "center",
   },
 
+<<<<<<< HEAD
   tabItemActive: { backgroundColor: WHITE },
+=======
+  tabItemActive: {
+    backgroundColor: WHITE,
+    shadowColor: "#703e4b",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
   tabText: {
     fontSize: 12,
-    color: "#666",
-    fontWeight: "500",
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "600",
     textAlign: "center",
   },
 
+<<<<<<< HEAD
   tabTextActive: { color: "#2a2a2a", fontWeight: "700" },
 
   scrollContent: { flexGrow: 1, paddingBottom: 20 },
+=======
+  tabTextActive: {
+    color: "#e65994",
+    fontWeight: "700",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
   // ── Empty card ──
   card: {
     backgroundColor: WHITE,
-    borderRadius: 20,
-    paddingVertical: 48,
+    borderRadius: 18,
+    paddingVertical: 40,
     paddingHorizontal: 24,
     alignItems: "center",
+<<<<<<< HEAD
     marginBottom: 16,
   },
 
   cartIllustration: { marginBottom: 16, opacity: 0.6 },
+=======
+    marginBottom: 20,
+    shadowColor: "#703e4b",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+
+  cartIllustration: {
+    marginBottom: 12,
+    opacity: 0.7,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#2a2a2a",
-    marginBottom: 8,
+    color: "#2c2c2c",
+    marginBottom: 6,
   },
 
   emptySubtitle: {
-    fontSize: 13,
-    color: "#999",
+    fontSize: 12,
+    color: "#8E8E93",
     textAlign: "center",
-    lineHeight: 19,
+    lineHeight: 18,
   },
 
   // ── Cart items card ──
@@ -835,6 +1137,7 @@ const styles = StyleSheet.create({
 
   // ── Add button ──
   addButton: {
+<<<<<<< HEAD
     borderWidth: 1.5,
     borderColor: RED_PRIMARY,
     borderStyle: "dashed",
@@ -843,14 +1146,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
     backgroundColor: "rgba(255,255,255,0.6)",
+=======
+    backgroundColor: PINK_BUTTON,
+    borderRadius: 50,
+    paddingVertical: 14,
+    alignItems: "center",
+    shadowColor: "#e08897",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
   },
 
   addButtonText: {
-    color: RED_PRIMARY,
+    color: "#b03d4c",
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: 14,
   },
 
+<<<<<<< HEAD
   // ── Total card ──
   totalCard: {
     backgroundColor: WHITE,
@@ -859,12 +1174,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 24,
     gap: 6,
+=======
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalCard: {
+    width: "88%",
+    backgroundColor: WHITE,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
   },
 
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+<<<<<<< HEAD
   },
 
   totalItemCount: { fontSize: 13, color: "#888" },
@@ -895,6 +1230,104 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 8,
+=======
+    marginBottom: 8,
+    opacity: 0.6,
+  },
+
+  modalTitle: {
+    fontWeight: "800",
+    fontSize: 18,
+    color: "#1c1c1e",
+    marginBottom: 4,
+  },
+
+  modalSubtitle: {
+    fontSize: 12,
+    color: "#8E8E93",
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#48484A",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+
+  dropdownField: {
+    borderWidth: 1.5,
+    borderColor: "#E5E5EA",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FAFAFC",
+  },
+
+  dropdownList: {
+    borderWidth: 1.5,
+    borderColor: "#E5E5EA",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginTop: 4,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#FAFAFC",
+  },
+
+  dropdownItemText: {
+    fontSize: 14,
+    color: "#2c2c2c",
+  },
+
+  dropdownText: {
+    fontSize: 14,
+    color: "#C7C7CC",
+    flex: 1,
+  },
+
+  dropdownTextSelected: {
+    color: "#2c2c2c",
+    fontWeight: "500",
+  },
+
+  inputField: {
+    borderWidth: 1.5,
+    borderColor: "#E5E5EA",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#2c2c2c",
+    backgroundColor: "#FAFAFC",
+  },
+
+  submitButton: {
+    backgroundColor: RED_PRIMARY,
+    borderRadius: 50,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+    shadowColor: RED_PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
   },
 
   confirmButtonText: {
@@ -906,21 +1339,47 @@ const styles = StyleSheet.create({
   // ── Transaction history ──
   txCard: {
     backgroundColor: WHITE,
-    borderRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#703e4b",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
   },
 
+<<<<<<< HEAD
   txDateHeader: { alignItems: "center", marginBottom: 16 },
 
   txTodayLabel: { fontSize: 14, fontWeight: "700", color: "#2a2a2a" },
 
   txTodayDate: { fontSize: 11, color: "#bbb", marginTop: 2 },
+=======
+  txDateHeader: {
+    alignItems: "flex-start",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+
+  txTodayLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1c1c1e",
+  },
+
+  txTodayDate: {
+    fontSize: 11,
+    color: "#8E8E93",
+    marginTop: 1,
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
   txRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 12,
   },
@@ -931,32 +1390,65 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 3,
+    marginBottom: 2,
   },
 
+<<<<<<< HEAD
   txName: { fontSize: 13, fontWeight: "700", color: "#2a2a2a" },
 
   txBadge: {
     backgroundColor: "#E05A6A",
     borderRadius: 20,
     paddingHorizontal: 8,
+=======
+  txName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2c2c2c",
+  },
+
+  txBadge: {
+    backgroundColor: "#FF5C5C",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
     paddingVertical: 2,
   },
 
   txBadgeText: { fontSize: 10, color: WHITE, fontWeight: "700" },
 
+<<<<<<< HEAD
   txDate: { fontSize: 11, color: "#bbb", marginBottom: 2 },
 
   txTotal: { fontSize: 13, fontWeight: "700", color: "#4CAF50", marginTop: 2 },
 
   txSeparator: { height: 1, backgroundColor: "#f0f0f0" },
+=======
+  txDate: {
+    fontSize: 11,
+    color: "#8E8E93",
+  },
+
+  txTotal: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2E7D32",
+  },
+
+  txSeparator: {
+    height: 1,
+    backgroundColor: "#F2F2F7",
+  },
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
 
   txExpandedDetail: {
-    marginTop: 8,
-    backgroundColor: "#fafafa",
-    borderRadius: 10,
-    padding: 10,
+    marginTop: 10,
+    backgroundColor: "#FAFAFC",
+    borderRadius: 12,
+    padding: 12,
     gap: 6,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
   },
 
   txDetailRow: {
@@ -965,6 +1457,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+<<<<<<< HEAD
   txDetailItem: { fontSize: 11, color: "#888", flex: 1 },
 
   txDetailPrice: { fontSize: 11, color: "#888", fontWeight: "600" },
@@ -975,11 +1468,17 @@ const styles = StyleSheet.create({
   // BOTTOM SHEET
   // ══════════════════════════════════════════
   bsOverlay: {
+=======
+  txDetailItem: {
+    fontSize: 12,
+    color: "#48484A",
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
   },
 
+<<<<<<< HEAD
   bsContainer: {
     backgroundColor: WHITE,
     borderTopLeftRadius: 24,
@@ -1031,6 +1530,17 @@ const styles = StyleSheet.create({
 
   bsProductName: {
     fontSize: 14,
+=======
+  txDetailPrice: {
+    fontSize: 12,
+    color: "#48484A",
+    fontWeight: "600",
+  },
+
+  txDetailPriceHighlight: {
+    fontSize: 14,
+    color: "#2E7D32",
+>>>>>>> bcf45236dae82bf59d0386ccd9a4305a089a24e9
     fontWeight: "700",
     color: "#2a2a2a",
     marginBottom: 2,
