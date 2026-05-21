@@ -13,7 +13,7 @@ import {
 
 import RNPickerSelect from "react-native-picker-select";
 
-const BASE_URL = "http://192.168.1.21:5000/api";
+const BASE_URL = "http://192.168.1.14:5000/api";
 
 export default function ManajemenStock() {
 

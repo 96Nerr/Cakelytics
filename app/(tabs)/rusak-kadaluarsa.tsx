@@ -1,11 +1,9 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Image } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Modal,
+  Alert, Image, Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -15,7 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 // ─── Backend ──────────────────────────────────────────────────────────────────
@@ -23,10 +21,10 @@ import {
 // GET    ${BASE_URL}/produk-rusak        → list semua produk rusak/kadaluarsa
 // POST   ${BASE_URL}/produk-rusak        → catat produk rusak/kadaluarsa baru
 // DELETE ${BASE_URL}/produk-rusak/:id   → hapus catatan produk rusak/kadaluarsa
-const BASE_URL = "http://192.168.1.21:5000/api";
+const BASE_URL = "http://192.168.1.14:5000/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Alasan = "Kadaluarsa" | "Rusak";
+type Keterangan = "Kadaluarsa" | "Rusak";
 
 type Produk = {
   idProduk: number;
@@ -38,8 +36,8 @@ type Produk = {
 
 type RusakItem = {
   idRusak: number;
-  jumlah: number;
-  alasan: Alasan;
+  jumlahRusak: number;
+  keterangan: Keterangan;
   catatan?: string;
   tanggal: string;
   produk: {
@@ -67,7 +65,7 @@ export default function RusakKadaluarsaScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Produk | null>(null);
   const [jumlahInput, setJumlahInput] = useState("");
-  const [alasanInput, setAlasanInput] = useState<Alasan | null>(null);
+  const [keteranganInput, setKeteranganInput] = useState<Keterangan | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
   // ── Fetch on mount ────────────────────────────────────────────────────────
@@ -89,7 +87,7 @@ export default function RusakKadaluarsaScreen() {
   // TODO: Sesuaikan endpoint GET produk rusak/kadaluarsa dengan backend-mu
   const fetchRusakItems = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/produk-rusak`);
+      const response = await fetch(`${BASE_URL}/barang-rusak`);
       const data = await response.json();
       setItems(data);
     } catch (error) {
@@ -99,11 +97,11 @@ export default function RusakKadaluarsaScreen() {
 
   // ── Derived stats ─────────────────────────────────────────────────────────
   const produkRusak = items
-    .filter((d) => d.alasan === "Rusak")
-    .reduce((s, d) => s + d.jumlah, 0);
+    .filter((d) => d.keterangan === "Rusak")
+    .reduce((s, d) => s + d.jumlahRusak, 0);
   const produkKadaluarsa = items
-    .filter((d) => d.alasan === "Kadaluarsa")
-    .reduce((s, d) => s + d.jumlah, 0);
+    .filter((d) => d.keterangan === "Kadaluarsa")
+    .reduce((s, d) => s + d.jumlahRusak, 0);
   const totalProduk = produkRusak + produkKadaluarsa;
 
   const hasData = items.length > 0;
@@ -117,7 +115,7 @@ export default function RusakKadaluarsaScreen() {
   const resetModal = () => {
     setSelectedProduct(null);
     setJumlahInput("");
-    setAlasanInput(null);
+    setKeteranganInput(null);
     setNoteInput("");
     setDropdownOpen(false);
   };
@@ -125,7 +123,7 @@ export default function RusakKadaluarsaScreen() {
   // ── Submit ────────────────────────────────────────────────────────────────
   // TODO: Sesuaikan body POST dengan field yang diterima backend-mu
   const handleSubmit = async () => {
-    if (!selectedProduct || !jumlahInput || !alasanInput) {
+    if (!selectedProduct || !jumlahInput || !keteranganInput) {
       Alert.alert("Warning", "Lengkapi semua field yang wajib diisi!");
       return;
     }
@@ -136,13 +134,13 @@ export default function RusakKadaluarsaScreen() {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/produk-rusak`, {
+      const response = await fetch(`${BASE_URL}/barang-rusak`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idProduk: selectedProduct.idProduk,
-          jumlah: qty,
-          alasan: alasanInput,
+          jumlahRusak: qty,
+          keterangan: keteranganInput,
           catatan: noteInput || null,
         }),
       });
@@ -174,7 +172,7 @@ export default function RusakKadaluarsaScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`${BASE_URL}/produk-rusak/${idRusak}`, {
+              const response = await fetch(`${BASE_URL}/barang-rusak/${idRusak}`, {
                 method: "DELETE",
               });
               if (response.ok) {
@@ -267,11 +265,11 @@ export default function RusakKadaluarsaScreen() {
                   <View key={item.idRusak} style={styles.itemRow}>
                     <View style={styles.itemLeft}>
                       <Text style={styles.itemName}>{item.produk?.namaProduk}</Text>
-                      <Text style={styles.itemSub}>Jumlah : {item.jumlah}</Text>
+                      <Text style={styles.itemSub}>Jumlah : {item.jumlahRusak}</Text>
                     </View>
                     <View style={styles.itemCenter}>
                       <Text style={styles.itemDate}>{formatDate(item.tanggal)}</Text>
-                      <Text style={styles.itemSub}>Alasan : {item.alasan}</Text>
+                      <Text style={styles.itemSub}>Keterangan : {item.keterangan}</Text>
                     </View>
                     <TouchableOpacity
                       style={styles.deleteBtn}
@@ -410,14 +408,14 @@ export default function RusakKadaluarsaScreen() {
               {/* Alasan */}
               <Text style={styles.fieldLabel}>Alasan</Text>
               <View style={styles.alasanRow}>
-                {(["Kadaluarsa", "Rusak"] as Alasan[]).map((a) => (
+                {(["Kadaluarsa", "Rusak"] as Keterangan[]).map((a) => (
                   <TouchableOpacity
                     key={a}
-                    style={[styles.alasanBtn, alasanInput === a && styles.alasanBtnActive]}
-                    onPress={() => setAlasanInput(a)}
+                    style={[styles.alasanBtn, keteranganInput === a && styles.alasanBtnActive]}
+                    onPress={() => setKeteranganInput(a)}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.alasanText, alasanInput === a && styles.alasanTextActive]}>
+                    <Text style={[styles.alasanText, keteranganInput === a && styles.alasanTextActive]}>
                       {a}
                     </Text>
                   </TouchableOpacity>
@@ -440,7 +438,7 @@ export default function RusakKadaluarsaScreen() {
               <TouchableOpacity
                 style={[
                   styles.modalButton,
-                  (!selectedProduct || !jumlahInput || !alasanInput) &&
+                  (!selectedProduct || !jumlahInput || !keteranganInput) &&
                     styles.modalButtonDisabled,
                 ]}
                 onPress={handleSubmit}

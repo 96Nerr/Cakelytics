@@ -31,6 +31,7 @@ model BarangRusak {
   tanggalRusak  DateTime @default(now())
   totalKerugian Int
   keterangan    String?
+  catatan        String?  // notes opsional
   idProduk      Int
   produk        Produk   @relation(fields: [idProduk], references: [idProduk], onDelete: Cascade)
 }

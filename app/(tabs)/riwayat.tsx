@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 
-const BASE_URL = "http://192.168.1.21:5000/api";
+const BASE_URL = "http://192.168.1.14:5000/api";
 
 const PINK_DARK = "#E8848D";
 const PINK_LIGHT = "#FAD8DB";
