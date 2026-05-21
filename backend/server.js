@@ -163,6 +163,61 @@ app.get('/api/transaksi', async (req, res) => {
   }
 });
 
+
+app.get('/api/riwayat-penjualan', async (req, res) => {
+  try {
+    const data = await prisma.transaksiPenjualan.findMany({
+      include: {
+        detailPenjualan: {
+          include: {
+            produk: true
+          }
+        }
+      },
+      orderBy: {
+        tanggalTransaksi: 'desc'
+      }
+    });
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Gagal mengambil riwayat penjualan" });
+  }
+});
+
+
+app.get('/api/transaksi/filter', async (req, res) => {
+  try {
+    const { start, end } = req.query;
+
+    const data = await prisma.transaksiPenjualan.findMany({
+      where: {
+        tanggalTransaksi: {
+          gte: new Date(start),
+          lt: new Date(end),
+        },
+      },
+      include: {
+        detailPenjualan: {
+          include: {
+            produk: true,
+          },
+        },
+      },
+      orderBy: {
+        tanggalTransaksi: 'desc',
+      },
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Gagal mengambil transaksi" });
+  }
+});
+
+
+
 // ==========================================
 // ROUTE PRODUKSI (KUE MASUK / MATANG)
 // ==========================================

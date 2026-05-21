@@ -1,85 +1,113 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert,
-} from "react-native";
+  import { Ionicons } from "@expo/vector-icons";
+  import { LinearGradient } from "expo-linear-gradient";
+  import { useRouter } from "expo-router";
+  import React, { useState, useEffect } from "react";
+  import {
+    Modal,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    Alert,
+  } from "react-native";
 
-const BASE_URL = "http://192.168.1.14:5000/api";
+  const BASE_URL = "http://192.168.1.14:5000/api";
 
-type Tab = "catat" | "rusak" | "riwayat";
+  type Tab = "catat" | "rusak" | "riwayat";
 
-type Transaction = {
-  idTransaksi: number;
-  tanggalTransaksi: string;
-  totalPenjualan: number;
-  detailPenjualan: {
-    idDetail: number;
-    jumlah: number;
-    subtotal: number;
-    produk: {
-      namaProduk: string;
-    };
-  }[];
-};
-
-export default function PenjualanScreen() {
-  const router = useRouter();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [jumlah, setJumlah] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
-
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-
-  const tabs: { key: Tab; label: string; route: string }[] = [
-    { key: "catat", label: "Catat Jual", route: "/cart" },
-    { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
-    { key: "riwayat", label: "Riwayat", route: "/riwayat" },
-  ];
-
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  const fetchInitialData = async () => {
-    await fetchProducts();
-    await fetchTransactions();
+  type Transaction = {
+    idTransaksi: number;
+    tanggalTransaksi: string;
+    totalPenjualan: number;
+    detailPenjualan: {
+      idDetail: number;
+      jumlah: number;
+      subtotal: number;
+      produk: {
+        namaProduk: string;
+      };
+    }[];
   };
 
-  const fetchProducts = async () => {
+  export default function PenjualanScreen() {
+    const router = useRouter();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [jumlah, setJumlah] = useState("");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
+
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+
+    const tabs: { key: Tab; label: string; route: string }[] = [
+      { key: "catat", label: "Catat Jual", route: "/cart" },
+      { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
+      { key: "riwayat", label: "Riwayat", route: "/riwayat" },
+    ];
+
+    // 1. Ambil transaksi hari ini
+    const transactionsToday = transactions;
+
+    // 2. Bongkar detailPenjualan menjadi satu list produk yang laku hari ini
+    const soldItemsToday = transactionsToday.flatMap(tx => 
+      tx.detailPenjualan.map(detail => ({
+      ...detail,
+      tanggalTransaksi: tx.tanggalTransaksi, // Ambil jam/waktu dari transaksi induknya
+      idTransaksi: tx.idTransaksi   // Tetap simpan ID transaksi buat referensi
+      }))
+    );
+
+    // 3. Hitung total pendapatan (Ini untuk menjawab error 'Cannot find name totalPenjualan')
+    const totalPendapatan = soldItemsToday.reduce((acc, curr) => acc + curr.subtotal, 0);
+
+    useEffect(() => {
+      fetchInitialData();
+    }, []);
+
+    const fetchInitialData = async () => {
+      await fetchProducts();
+      await fetchTransactions();
+    };
+
+    const fetchProducts = async () => {
     try {
+      // Tambahkan /produk jika BASE_URL berakhir di /api
       const response = await fetch(`${BASE_URL}/produk`);
+      if (!response.ok) throw new Error("Gagal mengambil produk");
       const data = await response.json();
       setProducts(data);
     } catch (error) {
-      console.error("Gagal ambil produk:", error);
+      console.log("Error fetchProducts:", error);
     }
   };
 
   const fetchTransactions = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/transaksi`);
-      const data = await response.json();
-      setTransactions(data);
-    } catch (error) {
-      console.error("Gagal ambil transaksi:", error);
-    }
-  };
+  try {
+    const response = await fetch(`${BASE_URL}/riwayat-penjualan`);
+
+    if (!response.ok) throw new Error("Gagal mengambil transaksi");
+
+    const data = await response.json();
+
+    const today = new Date().toDateString();
+
+    const filteredToday = data.filter((tx: Transaction) => {
+      const txDate = new Date(tx.tanggalTransaksi).toDateString();
+      return txDate === today;
+    });
+
+    setTransactions(filteredToday);
+  } catch (error) {
+    console.log("Error fetchTransactions:", error);
+  }
+};
 
   const handleSubmitSale = async () => {
     if (!selectedProduct || !jumlah) {
@@ -88,7 +116,8 @@ export default function PenjualanScreen() {
     }
 
     const qty = Number(jumlah);
-    const totalHarga = selectedProduct.hargaJual * qty;
+    // Pastikan hargaJual ada di selectedProduct
+    const totalHarga = (selectedProduct.hargaJual || 0) * qty;
 
     try {
       const response = await fetch(`${BASE_URL}/transaksi`, {
@@ -96,7 +125,7 @@ export default function PenjualanScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           totalPenjualan: totalHarga,
-          detailPesanan: [
+          detailPesanan: [ // Pastikan backend kamu menerima field 'detailPesanan'
             {
               idProduk: selectedProduct.idProduk,
               jumlah: qty,
@@ -113,23 +142,25 @@ export default function PenjualanScreen() {
         setModalVisible(false);
         setJumlah("");
         setSelectedProduct(null);
-        fetchTransactions();
-        fetchProducts();
+        await fetchTransactions(); // Refresh data
+        await fetchProducts();      // Refresh stok
       } else {
-        Alert.alert("Gagal", "Terjadi kesalahan saat menyimpan");
+        const errorData = await response.json();
+        Alert.alert("Gagal", errorData.error || "Terjadi kesalahan");
       }
     } catch (error) {
-      Alert.alert("Error", "Koneksi terputus");
+      console.log(error);
+      Alert.alert("Error", "Koneksi ke server gagal. Cek IP Laptop Anda.");
     }
   };
 
-  const formatRupiah = (amount: number) => {
-    return "Rp. " + (amount || 0).toLocaleString("id-ID");
-  };
+    const formatRupiah = (amount: number) => {
+      return "Rp. " + (amount || 0).toLocaleString("id-ID");
+    };
 
-  const toggleExpand = (id: number) => {
-    setExpandedTrxId((prev) => (prev === id ? null : id));
-  };
+    const toggleExpand = (id: number) => {
+      setExpandedTrxId((prev) => (prev === id ? null : id));
+    };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -147,6 +178,7 @@ export default function PenjualanScreen() {
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
         </View>
 
+        {/* Tab Menu */}
         <View style={styles.tabContainer}>
           {tabs.map((tab) => (
             <TouchableOpacity
@@ -174,53 +206,44 @@ export default function PenjualanScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {transactions.length === 0 ? (
+          {soldItemsToday.length === 0 ? (
             <View style={styles.card}>
-              <Text style={styles.emptyTitle}>Penjualan Masih Kosong</Text>
+              <Text style={styles.emptyTitle}>Belum Ada Produk Terjual</Text>
+              <Text style={{fontSize: 12, color: '#999', marginTop: 4}}>Data akan muncul setelah Anda mencatat penjualan.</Text>
             </View>
           ) : (
             <View style={styles.txCard}>
               <View style={styles.txDateHeader}>
-                <Text style={styles.txTodayLabel}>Riwayat Terakhir</Text>
+                <Text style={styles.txTodayLabel}>Today</Text>
+                <Text style={{fontSize: 10, color: '#bbb'}}>{new Date().toLocaleDateString("id-ID")}</Text>
               </View>
 
-              {transactions.map((tx, index) => {
-                const isExpanded = expandedTrxId === tx.idTransaksi;
-                const firstDetail = tx.detailPenjualan?.[0];
-                
-                return (
-                  <View key={tx.idTransaksi}>
-                    <TouchableOpacity style={styles.txRow} onPress={() => toggleExpand(tx.idTransaksi)}>
-                      <View style={styles.txLeft}>
-                        <View style={styles.txNameRow}>
-                          <Text style={styles.txName}>{firstDetail?.produk?.namaProduk || "Produk"}</Text>
-                          {isExpanded && (
-                             <View style={styles.txBadge}><Text style={styles.txBadgeText}>{firstDetail?.jumlah} pcs</Text></View>
-                          )}
+              {/* RENDER LIST PRODUK TERJUAL */}
+              {soldItemsToday.map((item, index) => (
+                <View key={`${item.idTransaksi}-${index}`}>
+                  <View style={styles.txRow}>
+                    <View style={styles.txLeft}>
+                      <View style={styles.txNameRow}>
+                        <Text style={styles.txName}>{item.produk?.namaProduk}</Text>
+                        <View style={styles.txBadge}>
+                          <Text style={styles.txBadgeText}>{item.jumlah} pcs</Text>
                         </View>
-                        <Text style={styles.txDate}>{new Date(tx.tanggalTransaksi).toLocaleDateString("id-ID")}</Text>
-                        
-                        {isExpanded && (
-                          <View style={styles.txExpandedDetail}>
-                            {tx.detailPenjualan.map((item, i) => (
-                              <View key={i} style={styles.txDetailRow}>
-                                <Text style={styles.txDetailItem}>{item.produk?.namaProduk} x {item.jumlah}</Text>
-                                <Text style={styles.txDetailPrice}>{formatRupiah(item.subtotal)}</Text>
-                              </View>
-                            ))}
-                            <View style={{ marginTop: 5, borderTopWidth: 1, borderColor: '#eee', paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between' }}>
-                                <Text style={{ fontWeight: 'bold' }}>TOTAL</Text>
-                                <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>{formatRupiah(tx.totalPenjualan)}</Text>
-                            </View>
-                          </View>
-                        )}
                       </View>
-                      {!isExpanded && <Text style={styles.txTotal}>{formatRupiah(tx.totalPenjualan)}</Text>}
-                    </TouchableOpacity>
-                    {index < transactions.length - 1 && <View style={styles.txSeparator} />}
+                      <Text style={styles.txDate}>
+                        {new Date(item.tanggalTransaksi).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} • TRX{item.idTransaksi}
+                      </Text>
+                    </View>
+                    <Text style={styles.txTotal}>{formatRupiah(item.subtotal)}</Text>
                   </View>
-                );
-              })}
+                  {index < soldItemsToday.length - 1 && <View style={styles.txSeparator} />}
+                </View>
+              ))}
+
+              {/* RINGKASAN TOTAL HARI INI */}
+              <View style={styles.summaryContainer}>
+                <Text style={styles.summaryLabel}>Total Pendapatan</Text>
+                <Text style={styles.summaryValue}>{formatRupiah(totalPendapatan)}</Text>
+              </View>
             </View>
           )}
 
@@ -234,76 +257,56 @@ export default function PenjualanScreen() {
         </ScrollView>
       </View>
 
+      {/* MODAL KAMU (Tetap sama seperti sebelumnya) */}
       <Modal visible={modalVisible} transparent animationType="fade">
   <View style={styles.modalOverlay}>
-    {/* Gunakan Pressable hanya untuk area luar saja */}
-    <Pressable 
-      style={StyleSheet.absoluteFill} 
-      onPress={() => { setModalVisible(false); setDropdownOpen(false); }} 
-    />
-    
     <View style={styles.modalCard}>
-      <Text style={styles.modalTitle}>Catat Terjual</Text>
-      
-      <Text style={styles.fieldLabel}>Pilih Produk</Text>
-      
-      {/* Container Dropdown */}
-      <View style={{ zIndex: 5000 }}>
-        <TouchableOpacity 
-          style={styles.dropdownField} 
-          onPress={() => setDropdownOpen(!dropdownOpen)}
-          activeOpacity={0.7}
-        >
-          <Text style={{ color: selectedProduct ? "#333" : "#bbb", flex: 1 }}>
-            {selectedProduct?.namaProduk || "-- Pilih Produk --"}
-          </Text>
-          <Ionicons name={dropdownOpen ? "chevron-up" : "chevron-down"} size={16} color="#666" />
-        </TouchableOpacity>
+      <Text style={styles.modalTitle}>Tambah Penjualan</Text>
 
-        {dropdownOpen && (
-          <View style={styles.dropdownList}>
-            {/* Pakai ScrollView dengan props yang dipaksa agar menangkap touch */}
-            <ScrollView 
-              style={{ maxHeight: 150 }} 
-              nestedScrollEnabled={true} 
-              keyboardShouldPersistTaps="always" // Ubah jadi always agar sentuhan langsung ditangkap
-              contentContainerStyle={{ flexGrow: 1 }}
-            >
-              {products.map((item) => (
-                <TouchableOpacity 
-                  key={item.idProduk} 
-                  style={styles.dropdownItem} 
-                  onPress={() => { 
-                    setSelectedProduct(item); 
-                    setDropdownOpen(false); 
-                  }}
-                >
-                  <Text style={{ fontSize: 14 }}>
-                    {item.namaProduk} <Text style={{ color: '#888', fontSize: 12 }}>(Stok: {item.stok})</Text>
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-
-      {/* Bagian Input Jumlah */}
-      <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Jumlah</Text>
-      <TextInput 
-        style={styles.inputField} 
-        keyboardType="numeric" 
-        value={jumlah} 
-        onChangeText={setJumlah} 
-        placeholder="0" 
-      />
-      
-      <TouchableOpacity 
-        style={styles.submitButton} 
-        onPress={handleSubmitSale} 
-        activeOpacity={0.8}
+      <Text style={styles.fieldLabel}>Produk</Text>
+      <TouchableOpacity
+        style={styles.dropdownField}
+        onPress={() => setDropdownOpen(!dropdownOpen)}
       >
+        <Text>
+          {selectedProduct ? selectedProduct.namaProduk : "Pilih produk"}
+        </Text>
+      </TouchableOpacity>
+
+      {dropdownOpen && (
+        <View style={styles.dropdownList}>
+          <ScrollView>
+            {products.map((item) => (
+              <TouchableOpacity
+                key={item.idProduk}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setSelectedProduct(item);
+                  setDropdownOpen(false);
+                }}
+              >
+                <Text>{item.namaProduk}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      <Text style={styles.fieldLabel}>Jumlah</Text>
+      <TextInput
+        style={styles.inputField}
+        keyboardType="numeric"
+        value={jumlah}
+        onChangeText={setJumlah}
+        placeholder="Masukkan jumlah"
+      />
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmitSale}>
         <Text style={styles.submitButtonText}>Simpan</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setModalVisible(false)}>
+        <Text style={{ textAlign: "center", marginTop: 12 }}>Batal</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -380,4 +383,25 @@ const styles = StyleSheet.create({
   txDetailRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
   txDetailItem: { fontSize: 11, color: "#888" },
   txDetailPrice: { fontSize: 11, fontWeight: "600" },
+
+  summaryContainer: {
+    marginTop: 10,
+    paddingTop: 15,
+    borderTopWidth: 2,
+    borderTopColor: '#f5f5f5',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333'
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#4CAF50'
+  }
+
 });
