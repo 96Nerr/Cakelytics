@@ -1,29 +1,28 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Image } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Modal,
+  Alert, Image, Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Backend ──────────────────────────────────────────────────────────────────
 // TODO: Sesuaikan endpoint berikut dengan backend-mu
 // GET    ${BASE_URL}/produk-rusak        → list semua produk rusak/kadaluarsa
 // POST   ${BASE_URL}/produk-rusak        → catat produk rusak/kadaluarsa baru
 // DELETE ${BASE_URL}/produk-rusak/:id   → hapus catatan produk rusak/kadaluarsa
-const BASE_URL = "http://192.168.1.21:5000/api";
+const BASE_URL = "http://192.168.1.8:5000/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Alasan = "Kadaluarsa" | "Rusak";

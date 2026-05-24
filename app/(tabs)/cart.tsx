@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -18,7 +17,9 @@ import {
   Alert,
 } from "react-native";
 
-const BASE_URL = "http://192.168.1.21:5000/api";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const BASE_URL = "http://192.168.1.8:5000/api";
 
 type Tab = "catat" | "rusak" | "riwayat";
 

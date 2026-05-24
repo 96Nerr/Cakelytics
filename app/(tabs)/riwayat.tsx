@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,7 +15,9 @@ import {
   View,
 } from "react-native";
 
-const BASE_URL = "http://192.168.1.21:5000/api";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const BASE_URL = "http://192.168.1.8:5000/api";
 
 const PINK_DARK = "#E8848D";
 const PINK_LIGHT = "#FAD8DB";
