@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// 1. Import alat-alat baru wajib Prisma 7
+// ==========================================
+// PRISMA + POSTGRES
+// ==========================================
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
@@ -10,128 +12,169 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 2. Setup "Sopir" Koneksi Database (Driver Adapter)
+// ==========================================
+// DATABASE CONNECTION
+// ==========================================
 const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
+
+const pool = new Pool({
+  connectionString
+});
+
 const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({
+  adapter
+});
 
-// 3. Masukkan adapter ke dalam Prisma Client
-const prisma = new PrismaClient({ adapter });
-
-// Middleware
+// ==========================================
+// MIDDLEWARE
+// ==========================================
 app.use(cors());
 app.use(express.json());
 
-// --- ENDPOINT API ---
-
-// Route Dasar
+// ==========================================
+// ROOT
+// ==========================================
 app.get('/', (req, res) => {
   res.send('Server Backend Cakelytics Berjalan Lancar! 🍰');
 });
 
-// Route Ambil Semua Data Produk
+// ==========================================
+// PRODUK
+// ==========================================
+
+// GET ALL PRODUK
 app.get('/api/produk', async (req, res) => {
   try {
-    const semuaProduk = await prisma.produk.findMany();
+    const semuaProduk = await prisma.produk.findMany({
+      orderBy: {
+        idProduk: 'asc'
+      }
+    });
     res.json(semuaProduk);
   } catch (error) {
-    console.error(error);
+    console.error("ERROR GET PRODUK:", error);
     res.status(500).json({ error: "Gagal mengambil data produk" });
   }
 });
 
-// Route Tambah Produk Baru (POST)
+// CREATE PRODUK
 app.post('/api/produk', async (req, res) => {
   try {
-    // 1. Menangkap data yang dikirim dari aplikasi HP
     const { namaProduk, hargaModal, hargaJual, stok } = req.body;
 
-    // 2. Menyuruh Prisma memasukkan data tersebut ke database
     const produkBaru = await prisma.produk.create({
       data: {
         namaProduk: namaProduk,
-        hargaModal: hargaModal,
-        hargaJual: hargaJual,
-        stok: stok
+        hargaModal: parseInt(hargaModal, 10),
+        hargaJual: parseInt(hargaJual, 10),
+        stok: parseInt(stok, 10)
       }
     });
-
-    // 3. Mengirimkan balasan sukses beserta data yang baru dibuat
     res.status(201).json(produkBaru);
   } catch (error) {
-    console.error(error);
+    console.error("ERROR CREATE PRODUK:", error);
     res.status(500).json({ error: "Gagal menambah produk" });
   }
 });
 
-// Route Edit Produk (PUT)
+// UPDATE PRODUK
 app.put('/api/produk/:id', async (req, res) => {
   try {
-    // Tangkap ID dari ujung URL (misal: /api/produk/1)
-    const productId = parseInt(req.params.id); 
+    const productId = parseInt(req.params.id, 10);
     const { namaProduk, hargaModal, hargaJual, stok } = req.body;
 
     const produkDiupdate = await prisma.produk.update({
       where: { idProduk: productId },
       data: {
         namaProduk: namaProduk,
-        hargaModal: hargaModal,
-        hargaJual: hargaJual,
-        stok: stok
+        hargaModal: parseInt(hargaModal, 10),
+        hargaJual: parseInt(hargaJual, 10),
+        stok: parseInt(stok, 10)
       }
     });
-
     res.json(produkDiupdate);
   } catch (error) {
-    console.error(error);
+    console.error("ERROR UPDATE PRODUK:", error);
     res.status(500).json({ error: "Gagal mengupdate produk" });
   }
 });
 
-// Route Hapus Produk (DELETE)
+// DELETE PRODUK
 app.delete('/api/produk/:id', async (req, res) => {
   try {
-    const productId = parseInt(req.params.id);
-
+    const productId = parseInt(req.params.id, 10);
     await prisma.produk.delete({
       where: { idProduk: productId }
     });
-
     res.json({ message: "Produk berhasil dihapus 🗑️" });
   } catch (error) {
-    console.error(error);
+    console.error("ERROR DELETE PRODUK:", error);
     res.status(500).json({ error: "Gagal menghapus produk" });
   }
 });
 
-// Route Tambah Transaksi Baru (POST) & Potong Stok Otomatis
+// ==========================================
+// TRANSAKSI PENJUALAN
+// ==========================================
+
+// CREATE TRANSAKSI
 app.post('/api/transaksi', async (req, res) => {
   try {
-    // metodePembayaran dihapus dari penangkapan data
     const { totalPenjualan, detailPesanan } = req.body;
 
+    if (!detailPesanan || !Array.isArray(detailPesanan) || detailPesanan.length === 0) {
+      return res.status(400).json({ error: "Detail pesanan kosong" });
+    }
+
     const transaksiBaru = await prisma.$transaction(async (tx) => {
-      
+      // VALIDASI STOK
+      for (const item of detailPesanan) {
+        const productId = parseInt(item.idProduk || item.idproduk, 10);
+        const jumlah = parseInt(item.jumlah, 10);
+
+        const produk = await tx.produk.findUnique({
+          where: { idProduk: productId }
+        });
+
+        if (!produk) {
+          throw new Error(`Produk ID ${productId} tidak ditemukan`);
+        }
+        if (produk.stok < jumlah) {
+          throw new Error(`Stok ${produk.namaProduk} tidak cukup`);
+        }
+      }
+
+      // CREATE TRANSAKSI
       const transaksi = await tx.transaksiPenjualan.create({
         data: {
-          totalPenjualan: totalPenjualan,
-          // metodePembayaran dihapus dari sini
+          totalPenjualan: parseInt(totalPenjualan, 10),
           detailPenjualan: {
-            create: detailPesanan 
+            create: detailPesanan.map((item) => ({
+              produk: {
+                connect: { idProduk: parseInt(item.idProduk || item.idproduk, 10) }
+              },
+              jumlah: parseInt(item.jumlah, 10),
+              hargaJualSaatIni: parseInt(item.hargaJualSaatIni, 10),
+              hargaModalSaatIni: parseInt(item.hargaModalSaatIni, 10),
+              subtotal: parseInt(item.subtotal, 10)
+            }))
           }
         },
         include: {
-          detailPenjualan: true 
+          detailPenjualan: {
+            include: { produk: true }
+          }
         }
       });
 
+      // UPDATE STOK
       for (const item of detailPesanan) {
+        const productId = parseInt(item.idProduk || item.idproduk, 10);
         await tx.produk.update({
-          where: { idProduk: item.idProduk },
+          where: { idProduk: productId },
           data: {
-            stok: {
-              decrement: item.jumlah
-            }
+            stok: { decrement: parseInt(item.jumlah, 10) }
           }
         });
       }
@@ -141,70 +184,53 @@ app.post('/api/transaksi', async (req, res) => {
 
     res.status(201).json(transaksiBaru);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Gagal mencatat transaksi penjualan" });
+    console.error("ERROR POST TRANSAKSI:", error);
+    res.status(500).json({ error: error.message || "Gagal transaksi" });
   }
 });
 
-// Route Ambil Semua Data Transaksi (GET)
+// GET RIWAYAT TRANSAKSI
 app.get('/api/transaksi', async (req, res) => {
   try {
     const semuaTransaksi = await prisma.transaksiPenjualan.findMany({
-      // include ini penting agar rincian kuenya (detail) ikut tampil!
       include: {
-        detailPenjualan: true 
+        detailPenjualan: {
+          include: { produk: true }
+        }
+      },
+      orderBy: {
+        tanggalTransaksi: 'desc'
       }
     });
-    
     res.json(semuaTransaksi);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Gagal mengambil data transaksi" });
+    console.error("ERROR GET TRANSAKSI:", error);
+    res.status(500).json({ error: error.message || "Gagal mengambil transaksi" });
   }
 });
 
 // ==========================================
-// ROUTE PRODUKSI (KUE MASUK / MATANG)
+// PRODUKSI
 // ==========================================
 
-// 1. Route Ambil Riwayat Produksi (GET)
-app.get('/api/produksi', async (req, res) => {
-  try {
-    const riwayatProduksi = await prisma.produksi.findMany({
-      include: {
-        produk: true // Membawa data produk agar kita tahu nama kuenya
-      }
-    });
-    res.json(riwayatProduksi);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Gagal mengambil data produksi" });
-  }
-});
-
-// 2. Route Catat Produksi Baru & Tambah Stok (POST)
+// CREATE PRODUKSI
 app.post('/api/produksi', async (req, res) => {
   try {
-    const { idProduk, jumlahProduksi } = req.body;
+    const { idProduk, idproduk, jumlahProduksi } = req.body;
+    const targetId = parseInt(idProduk || idproduk, 10);
 
-    // Gunakan Transaction agar pencatatan dan penambahan stok berjalan satu paket
     const produksiBaru = await prisma.$transaction(async (tx) => {
-      
-      // A. Catat riwayat produksi ke tabel Produksi
       const produksi = await tx.produksi.create({
         data: {
-          idProduk: idProduk,
-          jumlahProduksi: jumlahProduksi
+          idproduk: targetId,
+          jumlahProduksi: parseInt(jumlahProduksi, 10)
         }
       });
 
-      // B. Tambahkan stok ke tabel Produk
       await tx.produk.update({
-        where: { idProduk: idProduk },
+        where: { idProduk: targetId },
         data: {
-          stok: {
-            increment: jumlahProduksi // prisma otomatis menjumlahkan stok lama + stok baru
-          }
+          stok: { increment: parseInt(jumlahProduksi, 10) }
         }
       });
 
@@ -213,108 +239,60 @@ app.post('/api/produksi', async (req, res) => {
 
     res.status(201).json(produksiBaru);
   } catch (error) {
-    console.error(error);
+    console.error("ERROR PRODUKSI:", error);
     res.status(500).json({ error: "Gagal mencatat produksi" });
   }
 });
 
-// 3. Route Hapus Riwayat Produksi & Kembalikan Stok (DELETE)
-app.delete('/api/produksi/:id', async (req, res) => {
+// GET PRODUKSI
+app.get('/api/produksi', async (req, res) => {
   try {
-    const idProduksi = parseInt(req.params.id);
-
-    // 1. Cari data produksinya dulu untuk tahu berapa jumlah stok yang harus ditarik kembali
-    const dataProduksi = await prisma.produksi.findUnique({
-      where: { idProduksi: idProduksi }
+    const riwayatProduksi = await prisma.produksi.findMany({
+      include: { produk: true },
+      orderBy: { tanggalProduksi: 'desc' }
     });
-
-    if (!dataProduksi) {
-      return res.status(404).json({ error: "Data produksi tidak ditemukan" });
-    }
-
-    // 2. Lakukan proses Hapus dan Tarik Stok secara bersamaan
-    await prisma.$transaction(async (tx) => {
-      
-      // A. Tarik kembali / kurangi stok di tabel Produk
-      await tx.produk.update({
-        where: { idProduk: dataProduksi.idProduk },
-        data: {
-          stok: {
-            decrement: dataProduksi.jumlahProduksi 
-          }
-        }
-      });
-
-      // B. Hapus riwayat produksinya dari tabel
-      await tx.produksi.delete({
-        where: { idProduksi: idProduksi }
-      });
-
-    });
-
-    res.json({ message: "Data produksi dihapus dan stok berhasil dikembalikan" });
+    res.json(riwayatProduksi);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Gagal menghapus data produksi" });
+    console.error("ERROR GET PRODUKSI:", error);
+    res.status(500).json({ error: "Gagal mengambil data produksi" });
   }
 });
 
 // ==========================================
-// ROUTE BARANG RUSAK (KUE BASI / HANCUR)
+// BARANG RUSAK
 // ==========================================
 
-// 1. Route Ambil Riwayat Barang Rusak (GET)
-app.get('/api/barang-rusak', async (req, res) => {
-  try {
-    const riwayatRusak = await prisma.barangRusak.findMany({
-      include: {
-        produk: true // Membawa data produk agar tahu nama kuenya
-      }
-    });
-    res.json(riwayatRusak);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Gagal mengambil riwayat barang rusak" });
-  }
-});
-
-// 2. Route Catat Barang Rusak & Kurangi Stok (POST)
+// 1. CREATE BARANG RUSAK (POST)
 app.post('/api/barang-rusak', async (req, res) => {
   try {
+    // Sesuaikan dengan data yang dikirim dari frontend
     const { idProduk, jumlahRusak, keterangan } = req.body;
+    const targetId = parseInt(idProduk, 10);
 
     const barangRusakBaru = await prisma.$transaction(async (tx) => {
-      
-      // A. Cari tahu harga modal kue ini dulu untuk menghitung kerugian
       const infoProduk = await tx.produk.findUnique({
-        where: { idProduk: idProduk }
+        where: { idProduk: targetId }
       });
 
-      if (!infoProduk) {
-        throw new Error("Produk tidak ditemukan!"); // Batalkan jika kue tidak ada
-      }
+      if (!infoProduk) throw new Error("Produk tidak ditemukan!");
 
-      // Hitung kerugian (misal: 2 kue rusak x harga modal 25.000 = 50.000)
-      const hitungKerugian = jumlahRusak * infoProduk.hargaModal;
+      const hitungKerugian = parseInt(jumlahRusak, 10) * infoProduk.hargaModal;
 
-      // B. Catat datanya ke tabel Barang Rusak
+      // Gunakan field yang ada di skema: keterangan, bukan alasan/catatan
       const rusak = await tx.barangRusak.create({
         data: {
-          idProduk: idProduk,
-          jumlahRusak: jumlahRusak,
-          totalKerugian: hitungKerugian, // Masukkan hasil hitungan otomatis ke database
-          keterangan: keterangan
+          jumlahRusak: parseInt(jumlahRusak, 10),
+          totalKerugian: hitungKerugian,
+          keterangan: keterangan || "", 
+          produk: {
+            connect: { idProduk: targetId }
+          }
         }
       });
 
-      // C. Kurangi stok di tabel Produk
       await tx.produk.update({
-        where: { idProduk: idProduk },
-        data: {
-          stok: {
-            decrement: jumlahRusak 
-          }
-        }
+        where: { idProduk: targetId },
+        data: { stok: { decrement: parseInt(jumlahRusak, 10) } }
       });
 
       return rusak;
@@ -322,75 +300,95 @@ app.post('/api/barang-rusak', async (req, res) => {
 
     res.status(201).json(barangRusakBaru);
   } catch (error) {
-    console.error(error);
-    // Mengirim pesan error yang lebih spesifik jika produk tidak ditemukan
-    res.status(500).json({ error: error.message || "Gagal mencatat barang rusak" });
+    console.error("ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. GET BARANG RUSAK (GET)
+app.get('/api/barang-rusak', async (req, res) => {
+  try {
+    const riwayatRusak = await prisma.barangRusak.findMany({
+      include: { produk: true },
+      orderBy: { idRusak: 'desc' }
+    });
+    res.json(riwayatRusak);
+  } catch (error) {
+    console.error("ERROR GET BARANG RUSAK:", error);
+    res.status(500).json({ error: "Gagal mengambil riwayat barang rusak" });
+  }
+});
+
+// 3. DELETE BARANG RUSAK
+app.delete('/api/barang-rusak/:id', async (req, res) => {
+  try {
+    const idRusak = parseInt(req.params.id, 10);
+
+    const dataRusak = await prisma.barangRusak.findUnique({
+      where: { idRusak: idRusak }
+    });
+
+    if (!dataRusak) return res.status(404).json({ error: "Data tidak ditemukan" });
+
+    await prisma.$transaction(async (tx) => {
+      // Gunakan dataRusak.idProduk sesuai skema
+      await tx.produk.update({
+        where: { idProduk: dataRusak.idProduk }, 
+        data: { stok: { increment: dataRusak.jumlahRusak } }
+      });
+
+      await tx.barangRusak.delete({
+        where: { idRusak: idRusak }
+      });
+    });
+
+    res.json({ message: "Data berhasil dihapus dan stok dikembalikan" });
+  } catch (error) {
+    console.error("ERROR:", error);
+    res.status(500).json({ error: "Gagal menghapus data" });
   }
 });
 
 // ==========================================
-// ROUTE DASHBOARD (ANALITYCS)
+// DASHBOARD
 // ==========================================
-
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
-    // 1. Hitung Total Penjualan (Omzet) Keseluruhan
     const totalOmzet = await prisma.transaksiPenjualan.aggregate({
-      _sum: {
-        totalPenjualan: true
-      }
+      _sum: { totalPenjualan: true }
     });
 
-    // 2. Hitung Total Kerugian (Barang Rusak)
     const totalRugi = await prisma.barangRusak.aggregate({
-      _sum: {
-        totalKerugian: true
-      }
+      _sum: { totalKerugian: true }
     });
 
-    // 3. Hitung Produk Terlaris (Top 5)
-    // Kita grouping berdasarkan idProduk dan jumlahkan qty yang terjual
     const produkTerlaris = await prisma.detailPenjualan.groupBy({
-      by: ['idProduk'],
-      _sum: {
-        jumlah: true
-      },
-      orderBy: {
-        _sum: {
-          jumlah: 'desc'
-        }
-      },
-      take: 5 // Ambil 5 teratas saja
+      by: ['idproduk'],
+      _sum: { jumlah: true },
+      orderBy: { _sum: { jumlah: 'desc' } },
+      take: 5
     });
 
-    // Ambil detail nama produk untuk produk terlaris tersebut
     const produkTerlarisDetail = await Promise.all(
       produkTerlaris.map(async (item) => {
+        const cleanId = parseInt(item.idproduk, 10);
         const produk = await prisma.produk.findUnique({
-          where: { idProduk: item.idProduk },
+          where: { idProduk: cleanId },
           select: { namaProduk: true }
         });
+
         return {
-          nama: produk.namaProduk,
-          terjual: item._sum.jumlah
+          nama: produk ? produk.namaProduk : `Produk ID #${cleanId}`,
+          terjual: item._sum.jumlah || 0
         };
       })
     );
 
-    // 4. Cek Stok Tipis (Stok di bawah 10)
     const stokTipis = await prisma.produk.findMany({
-      where: {
-        stok: {
-          lt: 10 // lt = lower than (kurang dari)
-        }
-      },
-      select: {
-        namaProduk: true,
-        stok: true
-      }
+      where: { stok: { lt: 10 } },
+      select: { namaProduk: true, stok: true }
     });
 
-    // Kirim semua data ke Frontend dalam satu paket JSON
     res.json({
       summary: {
         totalPendapatan: totalOmzet._sum.totalPenjualan || 0,
@@ -400,14 +398,15 @@ app.get('/api/dashboard/stats', async (req, res) => {
       topProducts: produkTerlarisDetail,
       lowStockAlert: stokTipis
     });
-
   } catch (error) {
-    console.error(error);
+    console.error("ERROR DASHBOARD:", error);
     res.status(500).json({ error: "Gagal memuat data dashboard" });
   }
 });
 
-// --- JALANKAN SERVER ---
-app.listen(PORT, () => {
-  console.log(`✅ Server berhasil nyala di http://localhost:${PORT}`);
+// ==========================================
+// START SERVER
+// ==========================================
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server Cakelytics aktif di http://192.168.254.103:${PORT}`);
 });

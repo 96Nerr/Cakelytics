@@ -1,9 +1,8 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
-  Alert, Image, Modal,
+  Alert,
+  Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -12,19 +11,17 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  KeyboardAvoidingView,
+  FlatList,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useFocusEffect } from "expo-router";
 
-// ─── Backend ──────────────────────────────────────────────────────────────────
-// TODO: Sesuaikan endpoint berikut dengan backend-mu
-// GET    ${BASE_URL}/produk-rusak        → list semua produk rusak/kadaluarsa
-// POST   ${BASE_URL}/produk-rusak        → catat produk rusak/kadaluarsa baru
-// DELETE ${BASE_URL}/produk-rusak/:id   → hapus catatan produk rusak/kadaluarsa
-const BASE_URL = "http://192.168.1.8:5000/api";
+const BASE_URL = "http://192.168.254.103:5000/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Alasan = "Kadaluarsa" | "Rusak";
 
 type Produk = {
@@ -37,31 +34,26 @@ type Produk = {
 
 type RusakItem = {
   idRusak: number;
-  jumlah: number;
+  jumlahRusak: number;
   alasan: Alasan;
   catatan?: string;
-  tanggal: string;
-  produk: {
-    idProduk: number;
+  tanggal?: string;
+  tanggalRusak?: string;
+  createdAt?: string;
+  produk?: {
     namaProduk: string;
   };
 };
 
-// ─── Theme ───────────────────────────────────────────────────────────────────
-const PINK_DARK = "#E8848D";
-const PINK_LIGHT = "#FAD8DB";
-const RED_PRIMARY = "#E05A6A";
+const PINK_DARK = "#FF6B97";
+const PINK_LIGHT = "#FFF5F7";
 const WHITE = "#FFFFFF";
 
-// ─────────────────────────────────────────────────────────────────────────────
 export default function RusakKadaluarsaScreen() {
   const router = useRouter();
 
-  // ── Data state ────────────────────────────────────────────────────────────
   const [items, setItems] = useState<RusakItem[]>([]);
   const [products, setProducts] = useState<Produk[]>([]);
-
-  // ── Modal state ───────────────────────────────────────────────────────────
   const [modalVisible, setModalVisible] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Produk | null>(null);
@@ -69,15 +61,21 @@ export default function RusakKadaluarsaScreen() {
   const [alasanInput, setAlasanInput] = useState<Alasan | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
-  // ── Fetch on mount ────────────────────────────────────────────────────────
-  useEffect(() => {
-    fetchProducts();
-    fetchRusakItems();
-  }, []);
+  const fetchRusakItems = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/barang-rusak`);
+      if (!response.ok) throw new Error("Gagal mengambil data");
+      const data = await response.json();
+      setItems(data);
+    } catch (error) {
+      console.error("Gagal ambil data barang rusak:", error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
       const response = await fetch(`${BASE_URL}/produk`);
+      if (!response.ok) throw new Error("Gagal mengambil produk");
       const data = await response.json();
       setProducts(data);
     } catch (error) {
@@ -85,33 +83,12 @@ export default function RusakKadaluarsaScreen() {
     }
   };
 
-  // TODO: Sesuaikan endpoint GET produk rusak/kadaluarsa dengan backend-mu
-  const fetchRusakItems = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/produk-rusak`);
-      const data = await response.json();
-      setItems(data);
-    } catch (error) {
-      console.error("Gagal ambil data rusak/kadaluarsa:", error);
-    }
-  };
-
-  // ── Derived stats ─────────────────────────────────────────────────────────
-  const produkRusak = items
-    .filter((d) => d.alasan === "Rusak")
-    .reduce((s, d) => s + d.jumlah, 0);
-  const produkKadaluarsa = items
-    .filter((d) => d.alasan === "Kadaluarsa")
-    .reduce((s, d) => s + d.jumlah, 0);
-  const totalProduk = produkRusak + produkKadaluarsa;
-
-  const hasData = items.length > 0;
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  };
+  useFocusEffect(
+    useCallback(() => {
+      fetchProducts();
+      fetchRusakItems();
+    }, [])
+  );
 
   const resetModal = () => {
     setSelectedProduct(null);
@@ -121,634 +98,346 @@ export default function RusakKadaluarsaScreen() {
     setDropdownOpen(false);
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
-  // TODO: Sesuaikan body POST dengan field yang diterima backend-mu
   const handleSubmit = async () => {
     if (!selectedProduct || !jumlahInput || !alasanInput) {
-      Alert.alert("Warning", "Lengkapi semua field yang wajib diisi!");
+      Alert.alert("Peringatan", "Lengkapi semua data terlebih dahulu!");
       return;
     }
-    const qty = parseInt(jumlahInput, 10);
-    if (isNaN(qty) || qty <= 0) {
-      Alert.alert("Warning", "Jumlah tidak valid!");
+
+    const targetIdProduk = parseInt(String(selectedProduct.idProduk), 10);
+    const jumlah = parseInt(jumlahInput, 10);
+
+    if (isNaN(targetIdProduk)) {
+      Alert.alert("Peringatan", "ID Produk tidak valid, silakan pilih ulang produk!");
+      return;
+    }
+
+    if (isNaN(jumlah) || jumlah <= 0) {
+      Alert.alert("Peringatan", "Jumlah barang harus berupa angka valid dan lebih dari 0!");
+      return;
+    }
+
+    if (jumlah > selectedProduct.stok) {
+      Alert.alert("Peringatan", `Jumlah rusak melebihi stok yang ada! (Maksimal: ${selectedProduct.stok} pcs)`);
       return;
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/produk-rusak`, {
+      const response = await fetch(`${BASE_URL}/barang-rusak`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idProduk: selectedProduct.idProduk,
-          jumlah: qty,
+          idProduk: targetIdProduk,
+          jumlahRusak: jumlah,
           alasan: alasanInput,
-          catatan: noteInput || null,
+          keterangan: noteInput,
         }),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        Alert.alert("Sukses", "Produk rusak/kadaluarsa berhasil dicatat!");
         setModalVisible(false);
         resetModal();
         fetchRusakItems();
         fetchProducts();
+        Alert.alert("Sukses", "Data berhasil disimpan dan stok global berkurang!");
       } else {
-        Alert.alert("Gagal", "Terjadi kesalahan saat menyimpan");
+        Alert.alert("Gagal Menyimpan", result.error || "Gagal mencatat barang rusak");
       }
     } catch (error) {
-      Alert.alert("Error", "Koneksi terputus");
+      Alert.alert("Error", "Koneksi ke server terputus!");
     }
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
-  // TODO: Sesuaikan endpoint DELETE dengan backend-mu
-  const handleDelete = async (idRusak: number) => {
-    Alert.alert(
-      "Hapus Catatan",
-      "Yakin ingin menghapus catatan ini?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await fetch(`${BASE_URL}/produk-rusak/${idRusak}`, {
-                method: "DELETE",
-              });
-              if (response.ok) {
-                fetchRusakItems();
-                fetchProducts();
-              } else {
-                Alert.alert("Gagal", "Gagal menghapus catatan");
-              }
-            } catch (error) {
-              Alert.alert("Error", "Koneksi terputus");
+  const handleDelete = (idRusak: number) => {
+    Alert.alert("Hapus Data", "Apakah Anda yakin ingin menghapus data ini?", [
+      { text: "Batal", style: "cancel" },
+      {
+        text: "Hapus",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const response = await fetch(`${BASE_URL}/barang-rusak/${idRusak}`, {
+              method: "DELETE",
+            });
+            if (response.ok) {
+              fetchRusakItems();
+              fetchProducts();
+            } else {
+              Alert.alert("Gagal", "Tidak dapat menghapus data");
             }
-          },
+          } catch (error) {
+            Alert.alert("Error", "Koneksi terputus");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={PINK_DARK} />
-
-      {/* Gradient background */}
+      <StatusBar barStyle="light-content" backgroundColor={PINK_DARK} />
       <View style={StyleSheet.absoluteFillObject}>
         <LinearGradient colors={[PINK_DARK, PINK_LIGHT]} style={{ flex: 1 }} />
       </View>
 
       <View style={styles.container}>
-        {/* ── Header ── */}
-         <View style={styles.headerRow}>
-                          <Image
-                          source={require("../../assets/images/logo-cakelitycs.png")}
-                           style={styles.logo}  />                         
-                        </View>
+        <View style={styles.headerRow}>
+          <Image source={require("../../assets/images/logo-cakelitycs.png")} style={styles.logo} />
+        </View>
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
-          <Ionicons name="cart-outline" size={28} color="#ffffff" style={{ marginLeft: 6 }} />
+          <Ionicons name="cart-outline" size={24} color="#ffffff" style={{ marginLeft: 6 }} />
         </View>
 
-        {/* ── Tabs ── */}
         <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => router.push("/cart")}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/cart")}>
             <Text style={styles.tabText}>Catat Jual</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.tabItem, styles.tabActive]} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.tabItem, styles.tabActive]}>
             <Text style={[styles.tabText, styles.tabTextActive]}>Rusak/Kadaluarsa</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => router.push("/riwayat")}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/riwayat")}>
             <Text style={styles.tabText}>Riwayat</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── Scroll Content ── */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* ── MAIN CARD ── */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.mainCard}>
             <Text style={styles.cardTitle}>Daftar Produk Rusak / Kadaluarsa</Text>
-
-            {/* KONDISI 1: Empty state */}
-            {!hasData && (
+            {items.length === 0 ? (
               <View style={styles.emptyArea}>
-                <View style={styles.emptyIconWrap}>
-                  <Ionicons name="cube-outline" size={42} color="#D0A0A8" />
-                  <View style={styles.emptyExclaim}>
-                    <Text style={styles.emptyExclaimText}>!</Text>
-                  </View>
-                </View>
-                <Text style={styles.emptyText}>Belum ada produk rusak/kadaluarsa</Text>
+                <Text style={styles.emptyText}>Belum ada data barang rusak atau kadaluarsa.</Text>
               </View>
-            )}
-
-            {/* KONDISI 2: Data list */}
-            {hasData && (
+            ) : (
               <View style={styles.itemList}>
-                {items.map((item) => (
-                  <View key={item.idRusak} style={styles.itemRow}>
-                    <View style={styles.itemLeft}>
-                      <Text style={styles.itemName}>{item.produk?.namaProduk}</Text>
-                      <Text style={styles.itemSub}>Jumlah : {item.jumlah}</Text>
+                {items.map((item) => {
+                  const tanggalMentah = item.tanggal || item.createdAt || item.tanggalRusak;
+                  const tanggalFormat = tanggalMentah ? new Date(tanggalMentah).toLocaleDateString("id-ID") : "-";
+
+                  return (
+                    <View key={item.idRusak} style={styles.itemRow}>
+                      <View style={styles.itemLeft}>
+                        <Text style={styles.itemName} numberOfLines={1}>
+                          {item.produk?.namaProduk || "Produk Tidak Diketahui"}
+                        </Text>
+                        <View style={styles.qtyBadge}>
+                          <Text style={styles.qtyBadgeText}>{item.jumlahRusak} pcs</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.itemCenter}>
+                        <Text style={styles.itemDate}>{tanggalFormat}</Text>
+                        <Text style={[styles.reasonText, item.alasan === "Rusak" ? styles.reasonRusak : styles.reasonExpired]}>
+                          {item.alasan || "Rusak"}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => handleDelete(item.idRusak)}
+                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="trash-outline" size={14} color={WHITE} />
+                      </TouchableOpacity>
                     </View>
-                    <View style={styles.itemCenter}>
-                      <Text style={styles.itemDate}>{formatDate(item.tanggal)}</Text>
-                      <Text style={styles.itemSub}>Alasan : {item.alasan}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleDelete(item.idRusak)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="trash-outline" size={14} color={WHITE} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
-
-            {/* Stats row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNum}>{produkRusak}</Text>
-                <Text style={styles.statLabel}>Produk Rusak</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNum}>{produkKadaluarsa}</Text>
-                <Text style={styles.statLabel}>Produk Kadaluarsa</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNum}>{totalProduk}</Text>
-                <Text style={styles.statLabel}>Total Produk</Text>
-              </View>
-            </View>
           </View>
 
-          {/* ── CTA Button ── */}
-          <TouchableOpacity
-            style={styles.mainButton}
-            onPress={() => setModalVisible(true)}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.mainButton} onPress={() => setModalVisible(true)} activeOpacity={0.9}>
             <Text style={styles.mainButtonText}>+ Catat Produk Rusak / Kadaluarsa</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* ── MODAL — Input produk rusak/kadaluarsa ── */}
+      {/* MODAL FORM INPUT */}
       <Modal
-        visible={modalVisible}
-        transparent
         animationType="slide"
+        transparent={true}
+        visible={modalVisible}
         onRequestClose={() => {
           setModalVisible(false);
           resetModal();
         }}
       >
-        <Pressable
-          style={styles.bsOverlay}
-          onPress={() => {
-            setModalVisible(false);
-            resetModal();
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          <Pressable style={styles.bsContainer} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.bsHandle} />
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Warning box */}
-              <View style={styles.warningBox}>
-                <MaterialIcons
-                  name="warning-amber"
-                  size={18}
-                  color={RED_PRIMARY}
-                  style={{ marginRight: 8 }}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.warningTitle}>Catat Produk Rusak / Kadaluarsa</Text>
-                  <Text style={styles.warningDesc}>
-                    Stok akan dikurangi dan dicatat sebagai kerugian berdasarkan harga pokok.
-                    Karena tidak semua kue berakhir bahagia, tapi keuanganmu tetap harus tercatat.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Pilih Produk */}
-              <Text style={styles.fieldLabel}>Pilih Produk</Text>
-              <TouchableOpacity
-                style={styles.dropdownField}
-                onPress={() => setDropdownOpen((v) => !v)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    selectedProduct ? styles.dropdownTextSelected : null,
-                  ]}
-                >
-                  {selectedProduct?.namaProduk || "-- Pilih Produk --"}
-                </Text>
-                <Ionicons
-                  name={dropdownOpen ? "chevron-up" : "chevron-down"}
-                  size={16}
-                  color="#bbb"
-                />
-              </TouchableOpacity>
-
-              {dropdownOpen && (
-                <View style={styles.dropdownList}>
-                  {products.map((p) => (
-                    <TouchableOpacity
-                      key={p.idProduk}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setSelectedProduct(p);
-                        setDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>
-                        {p.namaProduk}{" "}
-                        <Text style={{ color: "#aaa", fontSize: 11 }}>(Stok: {p.stok})</Text>
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Jumlah */}
-              <Text style={styles.fieldLabel}>Jumlah</Text>
-              <TextInput
-                style={styles.inputField}
-                value={jumlahInput}
-                onChangeText={setJumlahInput}
-                keyboardType="numeric"
-                placeholder="Contoh : 3"
-                placeholderTextColor="#bbb"
+          <Pressable style={styles.bsOverlay} onPress={() => setModalVisible(false)}>
+            <Pressable style={styles.bsContainer} onPress={(e) => e.stopPropagation()}>
+              <LinearGradient
+                colors={["#FFFFFF", "#FFF5F7"]}
+                style={[StyleSheet.absoluteFillObject, { borderTopLeftRadius: 28, borderTopRightRadius: 28 }]}
               />
 
-              {/* Alasan */}
-              <Text style={styles.fieldLabel}>Alasan</Text>
-              <View style={styles.alasanRow}>
-                {(["Kadaluarsa", "Rusak"] as Alasan[]).map((a) => (
+              <View style={styles.bsHandle} />
+              <Text style={styles.modalTitle}>Tambah Produk Rusak / Kadaluarsa</Text>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 30 }}
+              >
+                <Text style={styles.fieldLabel}>Pilih Produk</Text>
+                <TouchableOpacity
+                  style={styles.dropdownField}
+                  onPress={() => setDropdownOpen(!dropdownOpen)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dropdownText, selectedProduct && styles.dropdownTextSelected]} numberOfLines={1}>
+                    {selectedProduct ? selectedProduct.namaProduk : "Pilih item produk"}
+                  </Text>
+                  <Ionicons name={dropdownOpen ? "chevron-up" : "chevron-down"} size={16} color="#8A6871" />
+                </TouchableOpacity>
+
+                <Text style={styles.fieldLabel}>Jumlah Barang</Text>
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Masukkan jumlah item..."
+                  placeholderTextColor="#B0A0A5"
+                  keyboardType="numeric"
+                  value={jumlahInput}
+                  onChangeText={setJumlahInput}
+                />
+
+                <Text style={styles.fieldLabel}>Alasan Kategori</Text>
+                <View style={styles.alasanRow}>
                   <TouchableOpacity
-                    key={a}
-                    style={[styles.alasanBtn, alasanInput === a && styles.alasanBtnActive]}
-                    onPress={() => setAlasanInput(a)}
+                    style={[styles.alasanBtn, alasanInput === "Rusak" && styles.alasanBtnActive]}
+                    onPress={() => setAlasanInput("Rusak")}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.alasanText, alasanInput === a && styles.alasanTextActive]}>
-                      {a}
-                    </Text>
+                    <Text style={[styles.alasanText, alasanInput === "Rusak" && styles.alasanTextActive]}>Rusak</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
+                  <TouchableOpacity
+                    style={[styles.alasanBtn, alasanInput === "Kadaluarsa" && styles.alasanBtnActive]}
+                    onPress={() => setAlasanInput("Kadaluarsa")}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.alasanText, alasanInput === "Kadaluarsa" && styles.alasanTextActive]}>Kadaluarsa</Text>
+                  </TouchableOpacity>
+                </View>
 
-              {/* Note */}
-              <Text style={styles.fieldLabel}>Note (Opsional)</Text>
-              <TextInput
-                style={[styles.inputField, styles.noteInput]}
-                value={noteInput}
-                onChangeText={setNoteInput}
-                multiline
-                numberOfLines={3}
-                placeholder="Tambahkan catatan..."
-                placeholderTextColor="#bbb"
-              />
+                <Text style={styles.fieldLabel}>Catatan / Keterangan</Text>
+                <TextInput
+                  style={[styles.inputField, styles.noteInput]}
+                  placeholder="Tambahkan keterangan rasa/kondisi (opsional)..."
+                  placeholderTextColor="#B0A0A5"
+                  multiline={true}
+                  value={noteInput}
+                  onChangeText={setNoteInput}
+                />
 
-              {/* Submit */}
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  (!selectedProduct || !jumlahInput || !alasanInput) &&
-                    styles.modalButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalButtonText}>Catat Produk Rusak / Kadaluarsa</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                <TouchableOpacity style={styles.modalButton} onPress={handleSubmit} activeOpacity={0.8}>
+                  <Text style={styles.modalButtonText}>Simpan Data</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => { setModalVisible(false); resetModal(); }} activeOpacity={0.6}>
+                  <Text style={{ textAlign: "center", marginTop: 16, color: '#8A6871', fontWeight: '600', fontSize: 14 }}>Batal</Text>
+                </TouchableOpacity>
+              </ScrollView>
+
+              {/* Dropdown List Container */}
+              {dropdownOpen && (
+                <View style={styles.dropdownListContainer}>
+                  <FlatList
+                    data={products}
+                    keyExtractor={(item) => item.idProduk.toString()}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setSelectedProduct(item);
+                          setDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          {item.namaProduk} (Stok: {item.stok})
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-
-  container: {
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === "android" ? 12 : 8,
-  },
-
-  // ── Header ──
-  appTitle: { fontSize: 22, fontWeight: "800", color: "#2a2a2a" },
-  appTitleAccent: { color: RED_PRIMARY },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#ffffff",
-    letterSpacing: 1.2,
-  },
-
-  // ── Tabs ──
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.35)",
-    borderRadius: 50,
-    padding: 4,
-    marginBottom: 16,
-  },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 50,
-    alignItems: "center",
-  },
-  tabActive: { backgroundColor: WHITE },
-  tabText: {
-    fontSize: 11,
-    color: "#666",
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  tabTextActive: { color: "#2a2a2a", fontWeight: "700" },
-
-  // ── Scroll ──
-  scrollContent: { paddingBottom: 32 },
-
-  // ── Main card ──
-  mainCard: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#c06070",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#2a2a2a",
-    marginBottom: 12,
-  },
-
-  // ── Empty state ──
-  emptyArea: {
-    alignItems: "center",
-    paddingVertical: 32,
-  },
-  emptyIconWrap: {
-    position: "relative",
-    marginBottom: 12,
-  },
-  emptyExclaim: {
-    position: "absolute",
-    right: -10,
-    top: -6,
-    backgroundColor: RED_PRIMARY,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyExclaimText: {
-    color: WHITE,
-    fontWeight: "800",
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  emptyText: { fontSize: 13, color: "#bbb", textAlign: "center" },
-
-  // ── Item list ──
-  itemList: { marginBottom: 8 },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FDEDF0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  itemLeft: { flex: 1 },
-  itemCenter: { flex: 1, alignItems: "flex-end", marginRight: 8 },
-  itemName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#2a2a2a",
-    marginBottom: 2,
-  },
-  itemDate: { fontSize: 11, color: "#888", marginBottom: 2 },
-  itemSub: { fontSize: 11, color: "#888" },
-  deleteBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    backgroundColor: RED_PRIMARY,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // ── Stats ──
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#FDE8EA",
-    borderRadius: 12,
-    padding: 10,
-    alignItems: "center",
-    marginHorizontal: 3,
-  },
-  statNum: { fontSize: 20, fontWeight: "800", color: "#2a2a2a" },
-  statLabel: { fontSize: 10, color: "#888", textAlign: "center", marginTop: 2 },
-
-  // ── CTA button ──
-  mainButton: {
-    backgroundColor: RED_PRIMARY,
-    borderRadius: 50,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: RED_PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  mainButtonText: { color: WHITE, fontWeight: "700", fontSize: 14 },
-
-  // ── Bottom Sheet ──
-  bsOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  headerRow: { marginBottom: 2, alignItems: "flex-start" },
+  logo: { width: 120, height: 35, resizeMode: "contain" },
+  sectionRow: { flexDirection: "row", alignItems: "center", marginTop: 2, marginBottom: 15 },
+  sectionTitle: { fontSize: 24, fontWeight: "800", color: "white" },
+  tabBar: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 50, padding: 4, marginBottom: 20 },
+  tabItem: { flex: 1, paddingVertical: 10, borderRadius: 50, alignItems: "center" },
+  tabActive: { backgroundColor: WHITE, elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  tabText: { fontSize: 12, color: "#FFE3EB", fontWeight: "600", textAlign: "center" },
+  tabTextActive: { color: "#4A1525", fontWeight: "700" },
+  scrollContent: { paddingBottom: 40 },
+  mainCard: { backgroundColor: WHITE, borderRadius: 24, padding: 20, marginBottom: 24, elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: "#4A1525", marginBottom: 16 },
+  emptyArea: { alignItems: "center", paddingVertical: 40 },
+  emptyText: { fontSize: 13, color: "#8A6871", textAlign: "center", fontWeight: "500" },
+  itemList: { marginBottom: 4 },
+  itemRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF5F7", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, borderWidth: 1, borderColor: "#FFEBF0" },
+  itemLeft: { flex: 1.8, alignItems: "flex-start" },
+  itemCenter: { flex: 1.4, alignItems: "flex-end", marginRight: 12 },
+  itemName: { fontSize: 14, fontWeight: "700", color: "#4A1525", marginBottom: 4 },
+  qtyBadge: { backgroundColor: "#FFF0F2", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  qtyBadgeText: { fontSize: 11, color: "#FF6B97", fontWeight: "700" },
+  itemDate: { fontSize: 12, color: "#8A6871", marginBottom: 3, fontWeight: "500" },
+  reasonText: { fontSize: 11, fontWeight: "700", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  reasonRusak: { backgroundColor: "#FFEBEB", color: "#E05A6A" },
+  reasonExpired: { backgroundColor: "#FFF3E0", color: "#E67E22" },
+  deleteBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: "#E05A6A", alignItems: "center", justifyContent: "center", elevation: 1 },
+  mainButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 16, alignItems: "center", elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  mainButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
+  bsOverlay: { flex: 1, backgroundColor: "rgba(74, 21, 37, 0.4)", justifyContent: "flex-end" },
   bsContainer: {
-    backgroundColor: WHITE,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingTop: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingBottom: Platform.OS === "android" ? 24 : 36,
-    maxHeight: "88%",
+    maxHeight: "80%",
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 15,
+    position: "relative"
   },
-  bsHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-
-  // ── Modal fields ──
-  warningBox: {
-    flexDirection: "row",
-    backgroundColor: "#FDE8EA",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
-    alignItems: "flex-start",
-  },
-  warningTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: RED_PRIMARY,
-    marginBottom: 4,
-  },
-  warningDesc: { fontSize: 11, color: "#888", lineHeight: 17 },
-
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-  },
-
-  dropdownField: {
-    borderWidth: 1.5,
-    borderColor: "#eee",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fafafa",
-    marginBottom: 6,
-  },
-  dropdownText: { fontSize: 13, color: "#bbb", flex: 1 },
-  dropdownTextSelected: { color: "#333" },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 12,
-    backgroundColor: WHITE,
-    marginBottom: 14,
-    overflow: "hidden",
-  },
-  dropdownItem: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f5f5f5",
-  },
-  dropdownItemText: { fontSize: 13, color: "#333" },
-
-  inputField: {
-    borderWidth: 1.5,
-    borderColor: "#eee",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 13,
-    color: "#333",
-    backgroundColor: "#fafafa",
-    marginBottom: 14,
-  },
-  noteInput: { height: 80, textAlignVertical: "top" },
-
-  alasanRow: { flexDirection: "row", marginBottom: 14, gap: 10 },
-  alasanBtn: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: "#eee",
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-    backgroundColor: "#fafafa",
-  },
-  alasanBtnActive: { borderColor: RED_PRIMARY, backgroundColor: "#FDE8EA" },
-  alasanText: { fontSize: 13, color: "#aaa", fontWeight: "600" },
-  alasanTextActive: { color: RED_PRIMARY },
-
-  modalButton: {
-    backgroundColor: RED_PRIMARY,
-    borderRadius: 50,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: 4,
-    marginBottom: 8,
-    shadowColor: RED_PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  header: { marginBottom: 14 },
-
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-
-   logo: {
-  width: 180,
-  height: 55,
-  resizeMode: "contain",
-},
-  modalButtonDisabled: { opacity: 0.45 },
-  modalButtonText: { color: WHITE, fontWeight: "700", fontSize: 14 },
+  bsHandle: { width: 40, height: 4, backgroundColor: "#FFEBF0", borderRadius: 2, alignSelf: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 15, color: "#4A1525", textAlign: "center" },
+  fieldLabel: { fontSize: 12, fontWeight: "600", color: "#8A6871", marginBottom: 6, marginTop: 14 },
+  dropdownField: { borderWidth: 1, borderColor: "#FFEBF0", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: WHITE },
+  dropdownText: { fontSize: 13, color: "#B0A0A5", fontWeight: "500", flex: 1 },
+  dropdownTextSelected: { color: "#4A1525", fontWeight: "600" },
+  inputField: { borderWidth: 1, borderColor: "#FFEBF0", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: "#4A1525", backgroundColor: WHITE },
+  noteInput: { height: 80, textAlignVertical: "top", paddingTop: 12 },
+  alasanRow: { flexDirection: "row", gap: 12, marginVertical: 4 },
+  alasanBtn: { flex: 1, paddingVertical: 12, borderRadius: 16, alignItems: "center", backgroundColor: WHITE, borderWidth: 1, borderColor: "#FFEBF0" },
+  alasanBtnActive: { backgroundColor: "#FFF0F2", borderColor: "#FF6B97" },
+  alasanText: { fontSize: 13, color: "#8A6871", fontWeight: "600" },
+  alasanTextActive: { color: "#FF6B97", fontWeight: "700" },
+  modalButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 14, alignItems: "center", marginTop: 24, elevation: 2 },
+  modalButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
+  dropdownListContainer: { position: "absolute", top: 120, left: 24, right: 24, backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: "#FFEBF0", maxHeight: 200, zIndex: 999, elevation: 5 },
+  dropdownItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#FFF5F7" },
+  dropdownItemText: { fontSize: 13, color: "#4A1525", fontWeight: "500" }
 });

@@ -5,7 +5,6 @@ import { Image } from "react-native";
 import React, { useState, useEffect } from "react";
 import {
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -16,20 +15,27 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useIsFocused } from "@react-navigation/native"; // ✅ PENTING: Supaya data ke-refresh pas pindah tab
 
-const BASE_URL = "http://192.168.1.8:5000/api";
+const BASE_URL = "http://192.168.254.103:5000/api";
 
-const PINK_DARK = "#E8848D";
-const PINK_LIGHT = "#FAD8DB";
-const RED_PRIMARY = "#E05A6A";
+// KONSISTENSI WARNA TEMA (Strawberry Soft-Cake Premium)
+const PINK_DARK = "#FF6B97";
+const PINK_LIGHT = "#FFF5F7";
 const WHITE = "#FFFFFF";
+const DARK_TEXT = "#4A1525";
+const MUTED_TEXT = "#8A6871";
 const GREEN_PRICE = "#2E9E5B";
 
 type DetailPenjualan = {
   idDetail: number;
+  idProduk: number; // ✅ FIX: Menggunakan P besar sesuai struktur database asli
   jumlah: number;
   subtotal: number;
-  produk: {
+  produk?: {
+    namaProduk: string;
+  };
+  Produk?: {
     namaProduk: string;
   };
 };
@@ -61,18 +67,22 @@ function formatTime(dateStr: string): string {
 
 export default function RiwayatScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused(); // ✅ Deteksi kalau user lagi buka tab riwayat
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTrx, setSelectedTrx] = useState<Transaction | null>(null);
 
+  // ✅ Auto refresh data riwayat setiap kali lo habis checkout dari tab "Catat Jual"
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (isFocused) {
+      fetchTransactions();
+    }
+  }, [isFocused]);
 
   const fetchTransactions = async () => {
     try {
       const response = await fetch(`${BASE_URL}/transaksi`);
       const data = await response.json();
-      setTransactions(data);
+      setTransactions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Gagal ambil transaksi:", error);
     }
@@ -83,25 +93,24 @@ export default function RiwayatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#E8848D" />
+      <StatusBar barStyle="light-content" backgroundColor={PINK_DARK} />
 
-  <View style={StyleSheet.absoluteFillObject}>
-    <LinearGradient
-      colors={["#E8848D", "#FAD8DB"]}
-      style={{ flex: 1 }}
-    />
-  </View>
+      <View style={StyleSheet.absoluteFillObject}>
+        <LinearGradient colors={[PINK_DARK, PINK_LIGHT]} style={{ flex: 1 }} />
+      </View>
+      
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerRow}>
-                  <Image
-                  source={require("../../assets/images/logo-cakelitycs.png")}
-                   style={styles.logo}  />                         
-                </View>
+          <Image
+            source={require("../../assets/images/logo-cakelitycs.png")}
+            style={styles.logo}  
+          />                        
+        </View>
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
-          <Ionicons name="cart-outline" size={28} color="#ffffff" style={{ marginLeft: 6 }} />
+          <Ionicons name="cart-outline" size={24} color="#ffffff" style={{ marginLeft: 6 }} />
         </View>
 
         {/* Tabs */}
@@ -118,7 +127,7 @@ export default function RiwayatScreen() {
             onPress={() => router.push("/rusak-kadaluarsa")}
             activeOpacity={0.8}
           >
-            <Text style={styles.tabText}>Rusak / Kadaluarsa</Text>
+            <Text style={styles.tabText}>Rusak/Kadaluarsa</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.tabItem, styles.tabActive]} activeOpacity={0.8}>
             <Text style={[styles.tabText, styles.tabTextActive]}>Riwayat</Text>
@@ -130,28 +139,33 @@ export default function RiwayatScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {transactions.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Ionicons name="receipt-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>Belum Ada Transaksi</Text>
-              <Text style={styles.emptySubtitle}>Riwayat penjualan akan muncul di sini</Text>
-            </View>
-          ) : (
-            transactions.map((trx) => (
-              <TouchableOpacity
-                key={trx.idTransaksi}
-                style={styles.trxCard}
-                onPress={() => setSelectedTrx(trx)}
-                activeOpacity={0.82}
-              >
-                <View style={styles.trxLeft}>
-                  <Text style={styles.trxCode}>TRX{trx.idTransaksi}</Text>
-                  <Text style={styles.trxDate}>{formatDate(trx.tanggalTransaksi)}</Text>
-                </View>
-                <Text style={styles.trxPrice}>{formatRupiah(trx.totalPenjualan)}</Text>
-              </TouchableOpacity>
-            ))
-          )}
+          <View style={styles.mainCard}>
+            <Text style={styles.cardTitle}>Daftar Riwayat Penjualan</Text>
+
+            {transactions.length === 0 ? (
+              <View style={styles.emptyArea}>
+                <Ionicons name="receipt-outline" size={44} color="#B0A0A5" />
+                <Text style={styles.emptyText}>Belum ada riwayat transaksi penjualan.</Text>
+              </View>
+            ) : (
+              <View style={styles.itemList}>
+                {transactions.map((trx) => (
+                  <TouchableOpacity
+                    key={trx.idTransaksi}
+                    style={styles.itemRowContainer}
+                    onPress={() => setSelectedTrx(trx)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.trxLeft}>
+                      <Text style={styles.trxCode}>TRX-{trx.idTransaksi}</Text>
+                      <Text style={styles.trxDate}>{formatDate(trx.tanggalTransaksi)}</Text>
+                    </View>
+                    <Text style={styles.trxPrice}>{formatRupiah(trx.totalPenjualan)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </ScrollView>
       </View>
 
@@ -169,9 +183,10 @@ export default function RiwayatScreen() {
                 {/* Header */}
                 <View style={styles.modalHeader}>
                   <View>
-                    <Text style={styles.modalTrxCode}>TRX{selectedTrx.idTransaksi}</Text>
-                    <Text style={styles.modalDate}>{formatDate(selectedTrx.tanggalTransaksi)}</Text>
-                    <Text style={styles.modalTime}>{formatTime(selectedTrx.tanggalTransaksi)}</Text>
+                    <Text style={styles.modalTrxCode}>TRX-{selectedTrx.idTransaksi}</Text>
+                    <Text style={styles.modalDate}>
+                      {formatDate(selectedTrx.tanggalTransaksi)} - {formatTime(selectedTrx.tanggalTransaksi)}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={styles.closeBtn}
@@ -185,14 +200,25 @@ export default function RiwayatScreen() {
                 <View style={styles.divider} />
 
                 {/* Items */}
-                {selectedTrx.detailPenjualan?.map((item, idx) => (
-                  <View key={idx} style={styles.itemRow}>
-                    <Text style={styles.itemName}>
-                      {item.produk?.namaProduk} x {item.jumlah}
-                    </Text>
-                    <Text style={styles.itemPrice}>{formatRupiah(item.subtotal)}</Text>
-                  </View>
-                ))}
+                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+                  {Array.isArray(selectedTrx.detailPenjualan) && selectedTrx.detailPenjualan.length > 0 ? (
+                    selectedTrx.detailPenjualan.map((item, idx) => {
+                      // ✅ Membaca namaProduk dari relasi "produk" atau "Produk" secara dinamis dan aman
+                      const namaKue = item.produk?.namaProduk || item.Produk?.namaProduk || `Produk ID #${item.idProduk || (item as any).idproduk}`;
+                      
+                      return (
+                        <View key={idx} style={styles.itemDetailRow}>
+                          <Text style={styles.itemName} numberOfLines={1}>
+                            {namaKue} <Text style={{ color: MUTED_TEXT, fontWeight: "400" }}>x {item.jumlah}</Text>
+                          </Text>
+                          <Text style={styles.itemPrice}>{formatRupiah(item.subtotal)}</Text>
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <Text style={styles.fallbackText}>Detail kue tidak termuat</Text>
+                  )}
+                </ScrollView>
 
                 <View style={styles.divider} />
 
@@ -211,106 +237,86 @@ export default function RiwayatScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: PINK_DARK },
-  bgTop: { ...StyleSheet.absoluteFillObject, backgroundColor: PINK_DARK },
-  bgBottom: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "55%",
-    backgroundColor: PINK_LIGHT,
-  },
+  safeArea: { flex: 1 },
   container: {
     flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === "android" ? 12 : 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  appTitle: { fontSize: 22, fontWeight: "800", color: "#2a2a2a" },
-  appTitleAccent: { color: RED_PRIMARY },
+  headerRow: { marginBottom: 2, alignItems: "flex-start" },
+  logo: {
+    width: 120,
+    height: 35,
+    resizeMode: "contain",
+  },
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#ffffff",
-    letterSpacing: 1.2,
+    fontSize: 24,
+    fontWeight: "800",
+    color: WHITE,
   },
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "rgba(255,255,255,0.25)",
     borderRadius: 50,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   tabItem: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 50,
     alignItems: "center",
   },
   tabActive: {
     backgroundColor: WHITE,
-    shadowColor: "#000",
+    elevation: 3,
+    shadowColor: "#4A1525",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  tabText: { fontSize: 11, color: "#666", fontWeight: "500", textAlign: "center" },
-  tabTextActive: { color: "#2a2a2a", fontWeight: "700" },
-  scrollContent: { paddingBottom: 24 },
-  emptyCard: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    paddingVertical: 44,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    marginTop: 8,
-    shadowColor: "#c06070",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+  tabText: { fontSize: 12, color: "#FFE3EB", fontWeight: "600", textAlign: "center" },
+  tabTextActive: { color: DARK_TEXT, fontWeight: "700" },
+  scrollContent: { paddingBottom: 40 },
+  mainCard: { 
+    backgroundColor: WHITE, 
+    borderRadius: 24, 
+    padding: 20, 
+    elevation: 3, 
+    shadowColor: "#4A1525", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 10 
   },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#2c2c2c",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    color: "#8E8E93",
-    textAlign: "center",
-  },
-  trxCard: {
-    backgroundColor: WHITE,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-    shadowColor: "#c06070",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+  cardTitle: { fontSize: 15, fontWeight: "700", color: DARK_TEXT, marginBottom: 16 },
+  emptyArea: { alignItems: "center", paddingVertical: 40, gap: 8 },
+  emptyText: { fontSize: 13, color: MUTED_TEXT, textAlign: "center", fontWeight: "500" },
+  itemList: { marginBottom: 4 },
+  itemRowContainer: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    backgroundColor: "#FFF5F7", 
+    borderRadius: 16, 
+    paddingHorizontal: 16, 
+    paddingVertical: 14, 
+    marginBottom: 10, 
+    borderWidth: 1, 
+    borderColor: "#FFEBF0" 
   },
   trxLeft: {},
-  trxCode: { fontSize: 13, fontWeight: "700", color: "#2a2a2a" },
-  trxDate: { fontSize: 11, color: "#aaa", marginTop: 2 },
-  trxPrice: { fontSize: 13, fontWeight: "700", color: GREEN_PRICE },
+  trxCode: { fontSize: 14, fontWeight: "700", color: DARK_TEXT },
+  trxDate: { fontSize: 12, color: MUTED_TEXT, marginTop: 2, fontWeight: "500" },
+  trxPrice: { fontSize: 14, fontWeight: "700", color: GREEN_PRICE },
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(74, 21, 37, 0.4)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -321,9 +327,9 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "100%",
     maxWidth: 380,
-    shadowColor: "#000",
+    shadowColor: "#4A1525",
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 12,
   },
@@ -331,49 +337,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
   },
-  modalTrxCode: { fontSize: 16, fontWeight: "800", color: "#1a1a1a" },
-  modalDate: { fontSize: 12, color: "#888", marginTop: 2 },
-  modalTime: { fontSize: 12, color: "#aaa" },
+  modalTrxCode: { fontSize: 16, fontWeight: "800", color: DARK_TEXT },
+  modalDate: { fontSize: 12, color: MUTED_TEXT, marginTop: 4, fontWeight: "500" },
   closeBtn: {
-    backgroundColor: RED_PRIMARY,
+    backgroundColor: "#E05A6A",
     width: 24,
     height: 24,
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
-  divider: { height: 1, backgroundColor: "#f0f0f0", marginVertical: 12 },
-  itemRow: {
+  divider: { height: 1, backgroundColor: "#FFEBF0", marginVertical: 14 },
+  itemDetailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  itemName: { fontSize: 13, color: "#333", fontWeight: "500" },
-  itemPrice: { fontSize: 13, color: "#333", fontWeight: "600" },
+  itemName: { fontSize: 13, color: DARK_TEXT, fontWeight: "600", flex: 1, marginRight: 8 },
+  itemPrice: { fontSize: 13, color: DARK_TEXT, fontWeight: "700" },
+  fallbackText: { fontSize: 12, color: MUTED_TEXT, textAlign: "center", marginVertical: 8 },
   modalFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-
-  header: { marginBottom: 14 },
-
-   logo: {
-  width: 180,
-  height: 55,
-  resizeMode: "contain",
-},
-  pcsText: { fontSize: 13, color: "#aaa" },
-  totalPrice: { fontSize: 15, fontWeight: "800", color: GREEN_PRICE },
+  pcsText: { fontSize: 13, color: MUTED_TEXT, fontWeight: "500" },
+  totalPrice: { fontSize: 16, fontWeight: "800", color: GREEN_PRICE },
 });

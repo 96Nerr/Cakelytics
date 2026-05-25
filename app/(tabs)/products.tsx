@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Image } from "react-native";
+import { LinearGradient } from "expo-linear-gradient"; // ✅ Ditambahkan agar sinkron dengan gradient Dashboard
 
 import {
   View,
@@ -13,7 +14,7 @@ import {
 } from "react-native";
 
 // GANTI DENGAN IP LAPTOPMU
-const BASE_URL = "http://192.168.1.8:5000/api";
+const BASE_URL = "http://192.168.254.103:5000/api";
 
 export default function Product() {
 
@@ -184,8 +185,6 @@ export default function Product() {
         }
       );
 
-      fetchProducts();
-
     } catch (error) {
 
       console.log(error);
@@ -214,7 +213,8 @@ export default function Product() {
   };
 
   return (
-    <View style={styles.container}>
+    // ✅ Mengganti View luar dengan LinearGradient agar sewarna dengan dashboard
+    <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={styles.container}>
 
       {/* APP NAME */}
       <Text style={styles.appName}>
@@ -237,7 +237,7 @@ export default function Product() {
       {/* SEARCH */}
       <TextInput
         placeholder="Cari produk"
-        placeholderTextColor="#999"
+        placeholderTextColor="#A3888F"
         style={styles.search}
         value={search}
         onChangeText={setSearch}
@@ -258,8 +258,9 @@ export default function Product() {
         keyExtractor={(item) =>
           item.idProduk.toString()
         }
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: 120,
+          paddingBottom: 140, // Ditinggikan sedikit agar tidak tertutup tombol tambah
         }}
         renderItem={({ item }) => {
 
@@ -320,15 +321,11 @@ export default function Product() {
               <View style={styles.priceRow}>
 
                 <Text style={styles.badge}>
-                  HPP :
-                  {" "}
-                  {item.hargaModal}
+                  HPP: Rp {item.hargaModal.toLocaleString("id-ID")}
                 </Text>
 
-                <Text style={styles.badge}>
-                  JUAL :
-                  {" "}
-                  {item.hargaJual}
+                <Text style={styles.badgeJual}>
+                  JUAL: Rp {item.hargaJual.toLocaleString("id-ID")}
                 </Text>
 
               </View>
@@ -363,8 +360,8 @@ export default function Product() {
                     KEUNTUNGAN
                   </Text>
 
-                  <Text style={styles.value}>
-                    Rp.{keuntungan}
+                  <Text style={styles.valueKeuntungan}>
+                    Rp {keuntungan.toLocaleString("id-ID")}
                   </Text>
                 </View>
 
@@ -375,8 +372,12 @@ export default function Product() {
                     {
                       backgroundColor:
                         item.stok > 0
-                          ? "#C8F7C5"
-                          : "#FFD6D6",
+                          ? "#FFEAEA" // Menggunakan palette soft warning dari dashboard
+                          : "#FFF3CD", 
+                      color: 
+                        item.stok > 0
+                          ? "#CC3838" 
+                          : "#856404",
                     },
                   ]}
                 >
@@ -395,12 +396,13 @@ export default function Product() {
       {/* BUTTON */}
       <TouchableOpacity
         style={styles.addButton}
+        activeOpacity={0.9}
         onPress={() =>
           setModalVisible(true)
         }
       >
         <Text style={styles.addText}>
-          Tambah Produk
+          + Tambah Produk Baru
         </Text>
       </TouchableOpacity>
 
@@ -413,7 +415,8 @@ export default function Product() {
 
         <View style={styles.modalOverlay}>
 
-          <View style={styles.modalBox}>
+          {/* ✅ Menggunakan LinearGradient pada box modal agar terlihat sangat estetik */}
+          <LinearGradient colors={["#FFFFFF", "#FFF5F7"]} style={styles.modalBox}>
 
             <Text style={styles.modalTitle}>
               {editId
@@ -427,17 +430,19 @@ export default function Product() {
 
             <TextInput
               placeholder="Contoh : Soft Cookies"
+              placeholderTextColor="#B0A0A5"
               style={styles.inputRounded}
               value={name}
               onChangeText={setName}
             />
 
             <Text style={styles.labelInput}>
-              Harga Pokok Penjualan
+              Harga Pokok Penjualan (HPP)
             </Text>
 
             <TextInput
-              placeholder="Rp.0"
+              placeholder="Rp 0"
+              placeholderTextColor="#B0A0A5"
               keyboardType="numeric"
               style={styles.inputRounded}
               value={hpp}
@@ -449,7 +454,8 @@ export default function Product() {
             </Text>
 
             <TextInput
-              placeholder="Rp.0"
+              placeholder="Rp 0"
+              placeholderTextColor="#B0A0A5"
               keyboardType="numeric"
               style={styles.inputRounded}
               value={hargaJual}
@@ -460,30 +466,32 @@ export default function Product() {
               style={
                 styles.submitButtonRounded
               }
+              activeOpacity={0.8}
               onPress={saveProduct}
             >
               <Text style={styles.submitText}>
                 {editId
-                  ? "Update Produk"
-                  : "Tambah Produk"}
+                  ? "Update Data Produk"
+                  : "Simpan Produk"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={resetForm}
+              activeOpacity={0.6}
             >
               <Text style={styles.cancelText}>
                 Batal
               </Text>
             </TouchableOpacity>
 
-          </View>
+          </LinearGradient>
 
         </View>
 
       </Modal>
 
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -491,103 +499,135 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: "#F26D6D",
     paddingTop: 60,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
   },
 
   appName: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
+    color: "#ffffff",
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 15,
+    gap: 3,
+    marginBottom: 10,
+    marginTop: 1,
   },
 
   title: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "800",
   },
 
   iconBox: {
-    fontSize: 18,
+    fontSize: 20,
   },
 
   search: {
     backgroundColor: "white",
-    borderRadius: 25,
-    padding: 12,
-    marginBottom: 15,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 20,
+    color: "#4A1525",
+    fontWeight: "500",
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   emptyText: {
     textAlign: "center",
-    color: "white",
+    color: "#4A1525",
+    opacity: 0.6,
     marginTop: 50,
+    fontWeight: "600",
   },
 
   card: {
     backgroundColor: "white",
-    borderRadius: 25,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 3,
   },
 
   cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
 
   productName: {
-    fontWeight: "bold",
-    fontSize: 15,
+    fontWeight: "700",
+    fontSize: 16,
+    color: "#4A1525",
+    flex: 1,
+    marginRight: 10,
   },
 
   iconRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
 
   edit: {
-    fontSize: 16,
-    backgroundColor: "#C8F7C5",
-    padding: 6,
-    borderRadius: 8,
+    fontSize: 14,
+    backgroundColor: "#EFFFF2",
+    padding: 8,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 
   delete: {
-    fontSize: 16,
-    backgroundColor: "#FFD6D6",
-    padding: 6,
-    borderRadius: 8,
+    fontSize: 14,
+    backgroundColor: "#FFEAEA",
+    padding: 8,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 
   priceRow: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
+    gap: 8,
+    marginTop: 12,
   },
 
   badge: {
-    backgroundColor: "#eee",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    backgroundColor: "#FFF0F2",
+    color: "#A84C63",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     fontSize: 12,
+    fontWeight: "600",
+  },
+
+  badgeJual: {
+    backgroundColor: "#EFFFF2",
+    color: "#2D8A4E",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    fontSize: 12,
+    fontWeight: "600",
   },
 
   line: {
     height: 1,
-    backgroundColor: "#ddd",
-    marginVertical: 10,
+    backgroundColor: "#FFEBF0",
+    marginVertical: 14,
   },
 
   infoRow: {
@@ -598,89 +638,118 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 10,
-    color: "#666",
+    color: "#8A6871",
+    fontWeight: "700",
+    marginBottom: 2,
   },
 
   value: {
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 14,
+    color: "#4A1525",
+  },
+
+  valueKeuntungan: {
+    fontWeight: "700",
+    fontSize: 14,
+    color: "#2D8A4E",
   },
 
   available: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
     fontSize: 10,
+    fontWeight: "700",
+    overflow: "hidden",
   },
 
   addButton: {
     position: "absolute",
-    bottom: 15,
+    bottom: 24,
     alignSelf: "center",
-    backgroundColor: "#FF5C5C",
-    paddingVertical: 15,
+    backgroundColor: "#FF6B97",
+    paddingVertical: 16,
     paddingHorizontal: 40,
-    borderRadius: 30,
+    borderRadius: 24,
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
   addText: {
     color: "white",
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 15,
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor:
-      "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(74, 21, 37, 0.4)", // Shadow overlay diselaraskan dengan tema Deep Berry
     justifyContent: "center",
     alignItems: "center",
   },
 
   modalBox: {
     width: "90%",
-    backgroundColor: "#f5f5f5",
-    borderRadius: 25,
-    padding: 20,
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
 
   modalTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
+    fontWeight: "800",
+    fontSize: 20,
+    color: "#4A1525",
     marginBottom: 15,
+    textAlign: "center",
   },
 
   labelInput: {
     fontSize: 12,
-    color: "#333",
-    marginBottom: 5,
-    marginTop: 10,
+    color: "#8A6871",
+    fontWeight: "600",
+    marginBottom: 6,
+    marginTop: 12,
   },
 
   inputRounded: {
     backgroundColor: "#fff",
-    borderRadius: 25,
-    paddingHorizontal: 15,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#FFEBF0",
+    color: "#4A1525",
+    fontWeight: "500",
   },
 
   submitButtonRounded: {
-    backgroundColor: "#FF6B6B",
-    paddingVertical: 15,
-    borderRadius: 25,
+    backgroundColor: "#FF6B97",
+    paddingVertical: 16,
+    borderRadius: 18,
     alignItems: "center",
-    marginTop: 15,
+    marginTop: 24,
   },
 
   submitText: {
     color: "white",
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 15,
   },
 
   cancelText: {
     textAlign: "center",
-    marginTop: 10,
-    color: "#999",
+    marginTop: 16,
+    color: "#8A6871",
+    fontWeight: "600",
+    fontSize: 14,
   },
 
 });

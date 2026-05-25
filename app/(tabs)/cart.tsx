@@ -1,123 +1,143 @@
-  import { Ionicons } from "@expo/vector-icons";
-  import { LinearGradient } from "expo-linear-gradient";
-  import { useRouter } from "expo-router";
-  import React, { useState, useEffect } from "react";
-  import {
-    Modal,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    Alert,
-  } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router"; // Tetap ambil useRouter dari sini
+import { useIsFocused } from "@react-navigation/native"; // Pindahkan useIsFocused ke sini!
+import React, { useState, useEffect } from "react";
+import {
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Alert,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+  FlatList,
+} from "react-native";
 
-  const BASE_URL = "http://192.168.1.14:5000/api";
+const BASE_URL = "http://192.168.254.103:5000/api";
 
-  type Tab = "catat" | "rusak" | "riwayat";
+type Tab = "catat" | "rusak" | "riwayat";
 
-  type Transaction = {
-    idTransaksi: number;
-    tanggalTransaksi: string;
-    totalPenjualan: number;
-    detailPenjualan: {
-      idDetail: number;
-      jumlah: number;
-      subtotal: number;
-      produk: {
-        namaProduk: string;
-      };
-    }[];
-  };
+interface Product {
+  idProduk: number; 
+  namaProduk: string;
+  hargaModal: number;
+  hargaJual: number;
+  stok: number;
+}
 
-  export default function PenjualanScreen() {
-    const router = useRouter();
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<any>(null);
-    const [jumlah, setJumlah] = useState("");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [expandedTrxId, setExpandedTrxId] = useState<number | null>(null);
+interface CartItem {
+  idProduk: number;
+  namaProduk: string;
+  hargaModal: number;
+  hargaJual: number;
+  jumlah: number;
+  subtotal: number;
+}
 
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
+export default function CartScreen() {
+  const router = useRouter();
+  const isFocused = useIsFocused();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [jumlah, setJumlah] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const tabs: { key: Tab; label: string; route: string }[] = [
-      { key: "catat", label: "Catat Jual", route: "/cart" },
-      { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
-      { key: "riwayat", label: "Riwayat", route: "/riwayat" },
-    ];
+  const tabs: { key: Tab; label: string; route: string }[] = [
+    { key: "catat", label: "Catat Jual", route: "/cart" },
+    { key: "rusak", label: "Rusak / Kadaluarsa", route: "/rusak-kadaluarsa" },
+    { key: "riwayat", label: "Riwayat", route: "/riwayat" },
+  ];
 
-    // 1. Ambil transaksi hari ini
-    const transactionsToday = transactions;
+  useEffect(() => {
+    if (isFocused) {
+      fetchProducts();
+    }
+  }, [isFocused]);
 
-    // 2. Bongkar detailPenjualan menjadi satu list produk yang laku hari ini
-    const soldItemsToday = transactionsToday.flatMap(tx => 
-      tx.detailPenjualan.map(detail => ({
-      ...detail,
-      tanggalTransaksi: tx.tanggalTransaksi, // Ambil jam/waktu dari transaksi induknya
-      idTransaksi: tx.idTransaksi   // Tetap simpan ID transaksi buat referensi
-      }))
-    );
-
-    // 3. Hitung total pendapatan (Ini untuk menjawab error 'Cannot find name totalPenjualan')
-    const totalPendapatan = soldItemsToday.reduce((acc, curr) => acc + curr.subtotal, 0);
-
-    useEffect(() => {
-      fetchInitialData();
-    }, []);
-
-    const fetchInitialData = async () => {
-      await fetchProducts();
-      await fetchTransactions();
-    };
-
-    const fetchProducts = async () => {
+  const fetchProducts = async () => {
     try {
-      // Tambahkan /produk jika BASE_URL berakhir di /api
       const response = await fetch(`${BASE_URL}/produk`);
       if (!response.ok) throw new Error("Gagal mengambil produk");
       const data = await response.json();
       setProducts(data);
     } catch (error) {
       console.log("Error fetchProducts:", error);
+      Alert.alert("Error", "Gagal mengambil data produk dari server.");
     }
   };
 
-  const fetchTransactions = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/riwayat-penjualan`);
-
-    if (!response.ok) throw new Error("Gagal mengambil transaksi");
-
-    const data = await response.json();
-
-    const today = new Date().toDateString();
-
-    const filteredToday = data.filter((tx: Transaction) => {
-      const txDate = new Date(tx.tanggalTransaksi).toDateString();
-      return txDate === today;
-    });
-
-    setTransactions(filteredToday);
-  } catch (error) {
-    console.log("Error fetchTransactions:", error);
-  }
-};
-
-  const handleSubmitSale = async () => {
+  const handleAddToBag = () => {
     if (!selectedProduct || !jumlah) {
       Alert.alert("Warning", "Pilih produk dan isi jumlah!");
       return;
     }
 
-    const qty = Number(jumlah);
-    // Pastikan hargaJual ada di selectedProduct
-    const totalHarga = (selectedProduct.hargaJual || 0) * qty;
+    const qty = parseInt(jumlah, 10);
+    if (isNaN(qty) || qty <= 0) {
+      Alert.alert("Warning", "Jumlah harus berupa angka lebih dari 0!");
+      return;
+    }
+
+    if (qty > selectedProduct.stok) {
+      Alert.alert("Stok Kurang", `Stok ${selectedProduct.namaProduk} tersisa ${selectedProduct.stok} pcs.`);
+      return;
+    }
+
+    const existingItemIndex = cartItems.findIndex(
+      (item) => item.idProduk === selectedProduct.idProduk
+    );
+
+    const hargaJual = selectedProduct.hargaJual || 0;
+
+    if (existingItemIndex > -1) {
+      const updatedItems = [...cartItems];
+      const targetItem = updatedItems[existingItemIndex];
+      
+      if (targetItem.jumlah + qty > selectedProduct.stok) {
+        Alert.alert("Stok Kurang", `Total di keranjang tidak boleh melebihi stok (${selectedProduct.stok} pcs).`);
+        return;
+      }
+
+      targetItem.jumlah += qty;
+      targetItem.subtotal = Math.round(targetItem.jumlah * hargaJual);
+      setCartItems(updatedItems);
+    } else {
+      setCartItems([
+        ...cartItems,
+        {
+          idProduk: selectedProduct.idProduk,
+          namaProduk: selectedProduct.namaProduk,
+          hargaModal: selectedProduct.hargaModal || 0,
+          hargaJual: hargaJual,
+          jumlah: qty,
+          subtotal: Math.round(hargaJual * qty),
+        },
+      ]);
+    }
+
+    handleCloseModal();
+  };
+
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      Alert.alert("Warning", "Keranjang belanja masih kosong!");
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    const totalHarga = cartItems.reduce((acc, curr) => acc + curr.subtotal, 0);
 
     try {
       const response = await fetch(`${BASE_URL}/transaksi`, {
@@ -125,57 +145,59 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           totalPenjualan: totalHarga,
-          detailPesanan: [ // Pastikan backend kamu menerima field 'detailPesanan'
-            {
-              idProduk: selectedProduct.idProduk,
-              jumlah: qty,
-              hargaModalSaatIni: selectedProduct.hargaModal,
-              hargaJualSaatIni: selectedProduct.hargaJual,
-              subtotal: totalHarga
-            }
-          ]
+          detailPesanan: cartItems.map((item) => ({
+            idProduk: item.idProduk,
+            jumlah: item.jumlah,
+            hargaModalSaatIni: item.hargaModal,
+            hargaJualSaatIni: item.hargaJual,
+            subtotal: item.subtotal,
+          })),
         }),
       });
 
       if (response.ok) {
-        Alert.alert("Sukses", "Penjualan berhasil dicatat!");
-        setModalVisible(false);
-        setJumlah("");
-        setSelectedProduct(null);
-        await fetchTransactions(); // Refresh data
-        await fetchProducts();      // Refresh stok
+        Alert.alert("Sukses", "Transaksi penjualan berhasil disimpan!");
+        setCartItems([]);
+        fetchProducts(); 
       } else {
-        const errorData = await response.json();
-        Alert.alert("Gagal", errorData.error || "Terjadi kesalahan");
+        const errorData = await response.json().catch(() => ({}));
+        Alert.alert("Gagal", errorData.error || "Terjadi kesalahan pada server");
       }
     } catch (error) {
       console.log(error);
-      Alert.alert("Error", "Koneksi ke server gagal. Cek IP Laptop Anda.");
+      Alert.alert("Error", "Koneksi ke server gagal.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-    const formatRupiah = (amount: number) => {
-      return "Rp. " + (amount || 0).toLocaleString("id-ID");
-    };
+  const formatRupiah = (amount: number) => {
+    return "Rp " + (amount || 0).toLocaleString("id-ID");
+  };
 
-    const toggleExpand = (id: number) => {
-      setExpandedTrxId((prev) => (prev === id ? null : id));
-    };
+  const totalBelanja = cartItems.reduce((acc, curr) => acc + curr.subtotal, 0);
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setDropdownOpen(false);
+    setJumlah("");
+    setSelectedProduct(null);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#E8848D" />
+      <StatusBar barStyle="light-content" backgroundColor="#FF6B97" />
       <View style={StyleSheet.absoluteFillObject}>
-        <LinearGradient colors={["#E8848D", "#FAD8DB"]} style={{ flex: 1 }} />
+        <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={{ flex: 1 }} />
       </View>
 
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.appTitle}>Cakelitycs</Text>
+          <Text style={styles.appTitle}>Cakelytics</Text>
         </View>
 
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>PENJUALAN</Text>
+          <Text style={styles.sectionTitle}>CATAT PENJUALAN</Text>
         </View>
 
         {/* Tab Menu */}
@@ -205,203 +227,255 @@
           ))}
         </View>
 
+        {/* Keranjang Belanja */}
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {soldItemsToday.length === 0 ? (
+          {cartItems.length === 0 ? (
             <View style={styles.card}>
-              <Text style={styles.emptyTitle}>Belum Ada Produk Terjual</Text>
-              <Text style={{fontSize: 12, color: '#999', marginTop: 4}}>Data akan muncul setelah Anda mencatat penjualan.</Text>
+              <Text style={styles.emptyTitle}>Keranjang Masih Kosong</Text>
+              <Text style={{ fontSize: 13, color: '#8A6871', marginTop: 6, textAlign: 'center', fontWeight: "500", lineHeight: 18 }}>
+                Klik tombol di bawah untuk mulai memasukkan item kue ke dalam bag belanjaan.
+              </Text>
             </View>
           ) : (
             <View style={styles.txCard}>
               <View style={styles.txDateHeader}>
-                <Text style={styles.txTodayLabel}>Today</Text>
-                <Text style={{fontSize: 10, color: '#bbb'}}>{new Date().toLocaleDateString("id-ID")}</Text>
+                <Text style={styles.txTodayLabel}>Daftar Belanja</Text>
               </View>
 
-              {/* RENDER LIST PRODUK TERJUAL */}
-              {soldItemsToday.map((item, index) => (
-                <View key={`${item.idTransaksi}-${index}`}>
+              {cartItems.map((item, index) => (
+                <View key={`${item.idProduk}-${index}`}>
                   <View style={styles.txRow}>
                     <View style={styles.txLeft}>
                       <View style={styles.txNameRow}>
-                        <Text style={styles.txName}>{item.produk?.namaProduk}</Text>
+                        <Text style={styles.txName} numberOfLines={1}>{item.namaProduk}</Text>
                         <View style={styles.txBadge}>
                           <Text style={styles.txBadgeText}>{item.jumlah} pcs</Text>
                         </View>
                       </View>
-                      <Text style={styles.txDate}>
-                        {new Date(item.tanggalTransaksi).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} • TRX{item.idTransaksi}
-                      </Text>
+                      <Text style={styles.txDate}>{formatRupiah(item.hargaJual)} / pcs</Text>
                     </View>
                     <Text style={styles.txTotal}>{formatRupiah(item.subtotal)}</Text>
                   </View>
-                  {index < soldItemsToday.length - 1 && <View style={styles.txSeparator} />}
+                  {index < cartItems.length - 1 && <View style={styles.txSeparator} />}
                 </View>
               ))}
 
-              {/* RINGKASAN TOTAL HARI INI */}
               <View style={styles.summaryContainer}>
-                <Text style={styles.summaryLabel}>Total Pendapatan</Text>
-                <Text style={styles.summaryValue}>{formatRupiah(totalPendapatan)}</Text>
+                <Text style={styles.summaryLabel}>Total Sementara</Text>
+                <Text style={styles.summaryValue}>{formatRupiah(totalBelanja)}</Text>
               </View>
+
+              <TouchableOpacity 
+                style={[styles.checkoutBtn, isSubmitting && { backgroundColor: '#B0A0A5' }]} 
+                onPress={handleCheckout}
+                disabled={isSubmitting}
+                activeOpacity={0.8}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color={WHITE} size="small" />
+                ) : (
+                  <Text style={styles.checkoutBtnText}>Checkout Sekarang</Text>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 
-          <TouchableOpacity 
-            style={styles.addButton} 
+          <TouchableOpacity
+            style={styles.addButton}
             onPress={() => setModalVisible(true)}
             activeOpacity={0.9}
           >
-            <Text style={styles.addButtonText}>+ Tambah Produk ke Penjualan</Text>
+            <Text style={styles.addButtonText}>+ Masukkan Item ke Keranjang</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* MODAL KAMU (Tetap sama seperti sebelumnya) */}
-      <Modal visible={modalVisible} transparent animationType="fade">
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalCard}>
-      <Text style={styles.modalTitle}>Tambah Penjualan</Text>
+      {/* MODAL INPUT ITEM */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={handleCloseModal}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Pilih Item Kue</Text>
 
-      <Text style={styles.fieldLabel}>Produk</Text>
-      <TouchableOpacity
-        style={styles.dropdownField}
-        onPress={() => setDropdownOpen(!dropdownOpen)}
-      >
-        <Text>
-          {selectedProduct ? selectedProduct.namaProduk : "Pilih produk"}
-        </Text>
-      </TouchableOpacity>
+            {/* Field Dropdown Pemicu Klik */}
+            <Text style={styles.fieldLabel}>Produk</Text>
+            <TouchableOpacity
+              style={styles.dropdownField}
+              onPress={() => setDropdownOpen(!dropdownOpen)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: selectedProduct ? '#4A1525' : '#B0A0A5', fontWeight: "500", flex: 1 }} numberOfLines={1}>
+                {selectedProduct ? `${selectedProduct.namaProduk} (Stok: ${selectedProduct.stok})` : "Pilih produk"}
+              </Text>
+              <Ionicons name={dropdownOpen ? "chevron-up" : "chevron-down"} size={16} color="#8A6871" />
+            </TouchableOpacity>
 
-      {dropdownOpen && (
-        <View style={styles.dropdownList}>
-          <ScrollView>
-            {products.map((item) => (
-              <TouchableOpacity
-                key={item.idProduk}
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setSelectedProduct(item);
-                  setDropdownOpen(false);
-                }}
-              >
-                <Text>{item.namaProduk}</Text>
+            {/* LIST UTAMA SEKARANG PAKAI FLATLIST AGAR SCROLL BERJALAN 100% SINKRON */}
+            {dropdownOpen && (
+              <View style={styles.dropdownListContainer}>
+                {products.length === 0 ? (
+                  <View style={{ padding: 14 }}>
+                    <Text style={{ color: '#8A6871', fontSize: 12, textAlign: 'center', fontWeight: "500" }}>Tidak ada produk tersedia</Text>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={products}
+                    keyExtractor={(item) => item.idProduk.toString()}
+                    style={styles.dropdownFlatList}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setSelectedProduct(item);
+                          setDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={{ color: '#4A1525', fontWeight: "500" }}>
+                          {item.namaProduk} - {formatRupiah(item.hargaJual)}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
+              </View>
+            )}
+
+            {/* Bagian input Jumlah */}
+            <View style={{ marginTop: 15 }}>
+              <Text style={styles.fieldLabel}>Jumlah</Text>
+              <TextInput
+                style={styles.inputField}
+                keyboardType="numeric"
+                value={jumlah}
+                onChangeText={setJumlah}
+                placeholder="Masukkan jumlah pesanan"
+                placeholderTextColor="#B0A0A5"
+              />
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleAddToBag} activeOpacity={0.8}>
+                <Text style={styles.submitButtonText}>Tambahkan ke Bag</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
 
-      <Text style={styles.fieldLabel}>Jumlah</Text>
-      <TextInput
-        style={styles.inputField}
-        keyboardType="numeric"
-        value={jumlah}
-        onChangeText={setJumlah}
-        placeholder="Masukkan jumlah"
-      />
+              <TouchableOpacity onPress={handleCloseModal} activeOpacity={0.6}>
+                <Text style={{ textAlign: "center", marginTop: 16, color: '#8A6871', fontWeight: '600', fontSize: 14 }}>Batal</Text>
+              </TouchableOpacity>
+            </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmitSale}>
-        <Text style={styles.submitButtonText}>Simpan</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => setModalVisible(false)}>
-        <Text style={{ textAlign: "center", marginTop: 12 }}>Batal</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const RED_PRIMARY = "#E05A6A";
-const PINK_BUTTON = "#F2B4B8";
 const WHITE = "#FFFFFF";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 60 },
   header: { marginBottom: 2 },
-  appTitle: { fontSize: 22, fontWeight: "800", color: "#2a2a2a" },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", marginTop: 4, marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#2a2a2a" },
-  tabContainer: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.35)", borderRadius: 50, padding: 4, marginBottom: 20 },
-  tabItem: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 50 },
-  tabItemActive: { backgroundColor: WHITE, elevation: 3 },
-  tabText: { fontSize: 12, color: "#666" },
-  tabTextActive: { color: "#2a2a2a", fontWeight: "700" },
-  scrollContent: { flexGrow: 1, paddingBottom: 20 },
-  card: { backgroundColor: WHITE, borderRadius: 20, padding: 48, alignItems: "center", elevation: 6, marginBottom: 24 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: "#2a2a2a" },
-  addButton: { backgroundColor: PINK_BUTTON, borderRadius: 50, paddingVertical: 16, alignItems: "center", elevation: 2 },
-  addButtonText: { color: RED_PRIMARY, fontWeight: "700" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
-  modalCard: { backgroundColor: WHITE, borderRadius: 24, padding: 24, width: "90%"},
-  modalTitle: { fontSize: 18, fontWeight: "800", marginBottom: 20 },
-  fieldLabel: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
-  dropdownField: { 
-    borderWidth: 1, 
-    borderColor: "#eee", 
-    borderRadius: 12, 
-    padding: 13, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    backgroundColor: '#fafafa'
+  appTitle: { fontSize: 28, fontWeight: "700", color: "#fcfcfc", letterSpacing: 0.5 },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", marginTop: 1, marginBottom: 5 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: "white" },
+  tabContainer: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 50, padding: 4, marginBottom: 20 },
+  tabItem: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 50 },
+  tabItemActive: { backgroundColor: WHITE, elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  tabText: { fontSize: 12, color: "#FFE3EB", fontWeight: "600" },
+  tabTextActive: { color: "#4A1525", fontWeight: "700" },
+  scrollContent: { flexGrow: 1, paddingBottom: 40 },
+  card: { backgroundColor: WHITE, borderRadius: 24, paddingHorizontal: 24, paddingVertical: 48, alignItems: "center", elevation: 3, marginBottom: 24, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: "#4A1525" },
+  addButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 16, alignItems: "center", elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  addButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(74, 21, 37, 0.4)", justifyContent: "center", alignItems: "center" },
+  
+  modalCard: { 
+    backgroundColor: WHITE,
+    borderRadius: 28, 
+    padding: 24, 
+    width: "90%", 
+    maxWidth: 400, 
+    shadowColor: "#4A1525", 
+    shadowOffset: { width: 0, height: 10 }, 
+    shadowOpacity: 0.15, 
+    shadowRadius: 20, 
+    elevation: 10,
+    position: "relative" // Menstabilkan penataan anak absolut
   },
-  dropdownList: { 
-  position: 'absolute', 
-  top: 52, 
-  left: 0, 
-  right: 0, 
-  borderWidth: 1, 
-  borderColor: "#eee", 
-  borderRadius: 12, 
-  backgroundColor: '#fff', 
-  elevation: 10,       // Naikkan elevation agar di atas segalanya di Android
-  zIndex: 10000,       // Naikkan zIndex untuk iOS
-  maxHeight: 160,      // Batasi tinggi
-},
-  dropdownItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: "#f9f9f9" },
-  inputField: { borderWidth: 1, borderColor: "#eee", borderRadius: 12, padding: 13, marginBottom: 20, backgroundColor: '#fafafa' },
-  submitButton: { backgroundColor: RED_PRIMARY, borderRadius: 50, paddingVertical: 16, alignItems: "center" },
-  submitButtonText: { color: WHITE, fontWeight: "700" },
-  txCard: { backgroundColor: WHITE, borderRadius: 20, padding: 20, elevation: 6, marginBottom: 24 },
-  txDateHeader: { alignItems: "center", marginBottom: 16 },
-  txTodayLabel: { fontSize: 14, fontWeight: "700" },
-  txRow: { paddingVertical: 12 },
-  txLeft: { flex: 1 },
-  txNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  txName: { fontSize: 13, fontWeight: "700" },
-  txBadge: { backgroundColor: RED_PRIMARY, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
-  txBadgeText: { fontSize: 10, color: WHITE, fontWeight: "700" },
-  txDate: { fontSize: 11, color: "#bbb" },
-  txTotal: { fontSize: 13, fontWeight: "700", color: "#4CAF50", textAlign: 'right' },
-  txSeparator: { height: 1, backgroundColor: "#f0f0f0" },
-  txExpandedDetail: { marginTop: 8, backgroundColor: "#fafafa", borderRadius: 10, padding: 10 },
-  txDetailRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  txDetailItem: { fontSize: 11, color: "#888" },
-  txDetailPrice: { fontSize: 11, fontWeight: "600" },
-
+  modalTitle: { fontSize: 20, fontWeight: "800", marginBottom: 20, color: "#4A1525", textAlign: "center" },
+  fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6, color: "#8A6871" },
+  dropdownField: {
+    borderWidth: 1,
+    borderColor: "#FFEBF0",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    backgroundColor: '#fff',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2
+  },
+  
+  // PERBAIKAN TOTAL: Membatasi tinggi agar tidak meluber dari kartu putih modal
+  dropdownListContainer: {
+    position: 'absolute',
+    top: 138, // Disesuaikan presisi di bawah kolom dropdown produk                       
+    left: 24,                  
+    right: 24,                 
+    borderWidth: 1,
+    borderColor: "#FFEBF0",
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    elevation: 15, // Ditinggikan agar diprioritaskan oleh sistem Android             
+    zIndex: 999, // Memastikan urutan tumpukan paling depan             
+    maxHeight: 110, // Dibatasi ketat agar muat di dalam batas modal putih
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,          
+    overflow: 'hidden'
+  },
+  dropdownFlatList: {
+    flexGrow: 0,
+  },
+  dropdownItem: { 
+    padding: 14, 
+    borderBottomWidth: 1, 
+    borderBottomColor: "#FFEBF0",
+    backgroundColor: WHITE
+  },
+  inputField: { borderWidth: 1, borderColor: "#FFEBF0", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 24, backgroundColor: '#fff', color: '#4A1525', fontWeight: "500" },
+  submitButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 16, alignItems: "center" },
+  submitButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
+  txCard: { backgroundColor: WHITE, borderRadius: 24, padding: 20, elevation: 3, marginBottom: 24, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+  txDateHeader: { alignItems: "flex-start", marginBottom: 10 },
+  txTodayLabel: { fontSize: 15, fontWeight: "700", color: "#4A1525" },
+  txRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
+  txLeft: { flex: 1, paddingRight: 10 },
+  txNameRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: 'wrap' },
+  txName: { fontSize: 14, fontWeight: "700", flexShrink: 1, color: "#4A1525" },
+  txBadge: { backgroundColor: "#FFF0F2", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
+  txBadgeText: { fontSize: 11, color: "#FF6B97", fontWeight: "700" },
+  txDate: { fontSize: 12, color: "#8A6871", marginTop: 4, fontWeight: "500" },
+  txTotal: { fontSize: 14, fontWeight: "700", color: "#4A1525" },
+  txSeparator: { height: 1, backgroundColor: "#FFEBF0" },
   summaryContainer: {
     marginTop: 10,
-    paddingTop: 15,
-    borderTopWidth: 2,
-    borderTopColor: '#f5f5f5',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#FFEBF0',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333'
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#4CAF50'
-  }
-
+  summaryLabel: { fontSize: 14, fontWeight: '700', color: '#4A1525' },
+  summaryValue: { fontSize: 16, fontWeight: '800', color: '#2D8A4E' },
+  checkoutBtn: { backgroundColor: '#2D8A4E', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 2 },
+  checkoutBtnText: { color: WHITE, fontWeight: '700', fontSize: 15 },
 });
