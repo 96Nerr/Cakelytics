@@ -11,7 +11,8 @@ import {
   Platform,
   StatusBar,
   KeyboardAvoidingView,
-  Pressable
+  Pressable,
+  Image
 } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { Ionicons } from "@expo/vector-icons"; 
@@ -19,7 +20,6 @@ import { useFocusEffect } from "expo-router";
 
 const BASE_URL = "http://192.168.254.103:5000/api";
 
-// TEMA WARNA PREMIUM (Strawberry Soft-Cake)
 const PINK_PRIMARY = "#FF6B97";
 const PINK_LIGHT = "#FFF5F7";
 const DARK_TEXT = "#4A1525";
@@ -33,7 +33,6 @@ export default function ManajemenStock() {
   const [stockInput, setStockInput] = useState("");
   const [search, setSearch] = useState("");
 
-  // Ambil Data Otomatis & Sinkron saat Layar Di-fokuskan kembali
   useFocusEffect(
     useCallback(() => {
       fetchProducts(); 
@@ -51,18 +50,15 @@ export default function ManajemenStock() {
     }
   };
 
-  // FILTER SEARCH
   const filteredProducts = products.filter((item) =>
     item.namaProduk?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // TAMBAH STOK
   const addStock = async () => {
     if (!selectedProduct) {
       Alert.alert("Pilih Produk", "Silahkan pilih produk terlebih dahulu");
       return;
     }
-
     if (!stockInput) {
       Alert.alert("Jumlah Kosong", "Masukkan jumlah produksi");
       return;
@@ -70,12 +66,9 @@ export default function ManajemenStock() {
 
     try {
       const newStock = selectedProduct.stok + Number(stockInput);
-
       await fetch(`${BASE_URL}/produk/${selectedProduct.idProduk}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           namaProduk: selectedProduct.namaProduk,
           hargaModal: selectedProduct.hargaModal,
@@ -95,37 +88,43 @@ export default function ManajemenStock() {
     }
   };
 
-  // WARNA STOK (Disesuaikan agar tetap tegas tapi masuk ke tone cake)
   const stockColor = (stock: number = 0) => {
-    if (stock <= 0) return "#FF5252"; // Merah tegas aman
-    if (stock < 5) return "#FFA000";  // Amber/Kuning hangat
-    return "#2E9E5B";                 // Hijau segar aman
+    if (stock <= 0) return "#FF5252"; 
+    if (stock < 5) return "#FFA000";  
+    return "#2E9E5B";                 
+  };
+
+  const getBadgeStatus = (stock: number = 0) => {
+    if (stock <= 0) return { label: "KOSONG", bgColor: "#FFEBEE", textColor: "#FF5252" };
+    if (stock < 5) return { label: "MENIPIS", bgColor: "#FFF8E1", textColor: "#FFA000" };
+    return { label: "SIAP JUAL", bgColor: "#EAF7EE", textColor: "#2E9E5B" };
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={PINK_PRIMARY} />
 
-      {/* HEADER BAR */}
+      {/* HEADER CARD STICKY FIXED DI ATAS */}
       <View style={styles.headerBox}>
-        <Text style={styles.appName}>Cakelytics</Text>
+        <Image 
+          source={require("../../assets/images/logo-cakelitycs.png")} 
+          style={styles.logoImageWhite} 
+          resizeMode="contain"
+        />
         <Text style={styles.title}>MANAJEMEN STOK 📦</Text>
         <Text style={styles.totalProduct}>{products.length} Produk terdaftar</Text>
 
-        {/* INFO CARD */}
         <View style={styles.infoRow}>
           <View style={styles.infoCard}>
             <Text style={styles.infoNumber}>{products.length}</Text>
             <Text style={styles.infoLabel}>Total</Text>
           </View>
-
           <View style={styles.infoCard}>
             <Text style={styles.infoNumberYellow}>
               {products.filter((item) => item.stok > 0 && item.stok < 5).length}
             </Text>
             <Text style={styles.infoLabel}>Menipis</Text>
           </View>
-
           <View style={styles.infoCard}>
             <Text style={styles.infoNumberRed}>
               {products.filter((item) => item.stok <= 0).length}
@@ -135,49 +134,63 @@ export default function ManajemenStock() {
         </View>
       </View>
 
-      {/* AREA KONTEN UTAMA */}
-      <View style={styles.contentArea}>
-        {/* ALERT MERAH */}
-        {products.some((item) => item.stok <= 0) && (
-          <View style={styles.redAlert}>
-            <Text style={styles.redAlertText}>
-              ⓧ Ada produk yang kehabisan stok! Segera jadwalkan produksi baru.
-            </Text>
+      {/* LIST DENGAN LOGIKA REVERSE STICKY */}
+      <FlatList
+        data={[{ isAlert: true }, ...filteredProducts]}
+        keyExtractor={(item, index) => item.idProduk ? item.idProduk.toString() : `alert-${index}`}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]} // Mengunci elemen pertama (Warning Card)
+        contentContainerStyle={{ paddingBottom: 140 }}
+        
+        // KOTAK SEARCH (Bisa di-scroll hilang ke atas)
+        ListHeaderComponent={
+          <View style={{ backgroundColor: PINK_LIGHT, paddingTop: 12 }}>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={18} color={MUTED_TEXT} style={styles.searchIcon} />
+              <TextInput
+                placeholder="Cari produk kue..."
+                placeholderTextColor="#B0A0A5"
+                style={styles.searchInput}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
           </View>
-        )}
+        }
 
-        {/* ALERT KUNING */}
-        {products.some((item) => item.stok > 0 && item.stok < 5) && (
-          <View style={styles.yellowAlert}>
-            <Text style={styles.yellowAlertText}>
-              ⚠ Beberapa stok kue mulai menipis. Harap pantau sisa penjualan.
-            </Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          // Render Warning Card sebagai elemen lengket (Sticky)
+          if (item.isAlert) {
+            const hasRedAlert = products.some((p) => p.stok <= 0);
+            const hasYellowAlert = products.some((p) => p.stok > 0 && p.stok < 5);
+            
+            if (!hasRedAlert && !hasYellowAlert) return null;
 
-        {/* SEARCH BAR */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color={MUTED_TEXT} style={styles.searchIcon} />
-          <TextInput
-            placeholder="Cari produk kue..."
-            placeholderTextColor="#B0A0A5"
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
+            return (
+              <View style={styles.stickyAlertWrapper}>
+                {hasRedAlert && (
+                  <View style={styles.redAlert}>
+                    <Text style={styles.redAlertText}>
+                      ⓧ Ada produk yang kehabisan stok! Segera jadwalkan produksi baru.
+                    </Text>
+                  </View>
+                )}
 
-        {/* LIST DATA PRODUK */}
-        <FlatList
-          data={filteredProducts}
-          keyExtractor={(item) => item.idProduk.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 140, 
-          }}
-          renderItem={({ item }) => (
+                {hasYellowAlert && (
+                  <View style={styles.yellowAlert}>
+                    <Text style={styles.yellowAlertText}>
+                      ⚠ Beberapa stok kue mulai menipis. Harap pantau sisa penjualan.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          }
+
+          // Render Item Kue biasa
+          const status = getBadgeStatus(item.stok);
+          return (
             <View style={styles.card}>
-              {/* TOP */}
               <View style={styles.cardTop}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.productName}>{item.namaProduk}</Text>
@@ -186,35 +199,21 @@ export default function ManajemenStock() {
                     <Text style={[styles.priceText, { marginLeft: 12 }]}>Jual: Rp {item.hargaJual?.toLocaleString()}</Text>
                   </View>
                 </View>
-                <View
-                  style={[
-                    styles.statusIndicator,
-                    { backgroundColor: stockColor(item.stok) },
-                  ]}
-                />
+                <View style={[styles.statusIndicator, { backgroundColor: stockColor(item.stok) }]} />
               </View>
 
-              {/* PROGRESS BAR */}
               <View style={styles.progressBar}>
                 <View
                   style={[
                     styles.progressFill,
                     {
                       backgroundColor: stockColor(item.stok),
-                      width:
-                        item.stok > 15
-                          ? "100%"
-                          : item.stok > 5
-                          ? "70%"
-                          : item.stok > 0
-                          ? "25%"
-                          : "10%",
+                      width: item.stok > 15 ? "100%" : item.stok > 5 ? "70%" : item.stok > 0 ? "25%" : "0%",
                     },
                   ]}
                 />
               </View>
 
-              {/* BOTTOM */}
               <View style={styles.bottomRow}>
                 <View>
                   <Text style={styles.stockLabel}>STOK TERSEDIA</Text>
@@ -222,17 +221,16 @@ export default function ManajemenStock() {
                     {item.stok} <Text style={{ fontSize: 13, fontWeight: "500", color: MUTED_TEXT }}>pcs</Text>
                   </Text>
                 </View>
-
-                <View style={styles.produksiBadge}>
-                  <Text style={styles.produksiText}>SIAP JUAL</Text>
+                <View style={[styles.produksiBadge, { backgroundColor: status.bgColor }]}>
+                  <Text style={[styles.produksiText, { color: status.textColor }]}>{status.label}</Text>
                 </View>
               </View>
             </View>
-          )}
-        />
-      </View>
+          );
+        }}
+      />
 
-      {/* FLOATING BUTTON (Sage-mint pastel premium) */}
+      {/* FLOATING BUTTON */}
       <TouchableOpacity
         style={styles.floatingButton}
         activeOpacity={0.82}
@@ -245,28 +243,17 @@ export default function ManajemenStock() {
 
       {/* MODAL INPUT */}
       <Modal visible={modalVisible} transparent animationType="slide">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
           <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
             <Pressable style={styles.modalBox} onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
-              
               <Text style={styles.modalTitle}>Input Produksi Baru</Text>
-              <Text style={styles.modalSubtitle}>
-                Catat hasil produksi dapur di sini agar sistem pergudangan tetap akurat.
-              </Text>
+              <Text style={styles.modalSubtitle}>Catat hasil produksi dapur di sini agar sistem pergudangan tetap akurat.</Text>
 
-              {/* PILIH PRODUK */}
               <Text style={styles.label}>Pilih Produk Kue</Text>
               <View style={styles.pickerWrapper}>
                 <RNPickerSelect
-                  placeholder={{
-                    label: "-- Klik untuk pilih produk --",
-                    value: null,
-                    color: "#B0A0A5"
-                  }}
+                  placeholder={{ label: "-- Klik untuk pilih produk --", value: null, color: "#B0A0A5" }}
                   onValueChange={(value) => {
                     const product = products.find((item) => item.idProduk === value);
                     setSelectedProduct(product);
@@ -275,14 +262,10 @@ export default function ManajemenStock() {
                     label: `${item.namaProduk} (Sisa Stok: ${item.stok})`,
                     value: item.idProduk,
                   }))}
-                  style={{
-                    inputIOS: styles.pickerInput,
-                    inputAndroid: styles.pickerInput,
-                  }}
+                  style={{ inputIOS: styles.pickerInput, inputAndroid: styles.pickerInput }}
                 />
               </View>
 
-              {/* INPUT JUMLAH */}
               <Text style={styles.label}>Jumlah Produksi Baru (Pcs)</Text>
               <TextInput
                 placeholder="Contoh : 15"
@@ -293,12 +276,7 @@ export default function ManajemenStock() {
                 onChangeText={setStockInput}
               />
 
-              {/* BUTTON SIMPAN */}
-              <TouchableOpacity
-                style={styles.saveButton}
-                activeOpacity={0.8}
-                onPress={addStock}
-              >
+              <TouchableOpacity style={styles.saveButton} activeOpacity={0.8} onPress={addStock}>
                 <Text style={styles.saveText}>Tambah Stok Produksi</Text>
               </TouchableOpacity>
             </Pressable>
@@ -315,16 +293,13 @@ const styles = StyleSheet.create({
     backgroundColor: PINK_PRIMARY,
     paddingTop: Platform.OS === "ios" ? 50 : 45,
     paddingHorizontal: 20,
-    paddingBottom: 22,
+    paddingBottom: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    ...Platform.select({
-      ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 10 },
-      android: { elevation: 5 },
-    }),
+    zIndex: 10, 
   },
-  appName: { color: WHITE, fontSize: 28, fontWeight: "900", letterSpacing: 0.5, marginBottom: 4 },
-  title: { color: WHITE, fontSize: 16, fontWeight: "700", letterSpacing: 0.8 },
+  logoImageWhite: { width: 130, height: 36, marginLeft: -4, marginBottom: 6 },
+  title: { color: WHITE, fontSize: 15, fontWeight: "700", letterSpacing: 0.8 },
   totalProduct: { marginTop: 4, marginBottom: 16, fontSize: 13, color: "#FFF2F5", fontWeight: "500" },
   infoRow: { flexDirection: "row", justifyContent: "space-between" },
   infoCard: {
@@ -339,13 +314,14 @@ const styles = StyleSheet.create({
   infoNumberYellow: { fontSize: 22, fontWeight: "bold", color: "#FFA000" },
   infoNumberRed: { fontSize: 22, fontWeight: "bold", color: "#FF5252" },
   infoLabel: { marginTop: 3, fontSize: 11, fontWeight: "600", color: DARK_TEXT },
-  contentArea: { flex: 1 },
-  redAlert: { backgroundColor: "#FFEBEE", marginHorizontal: 15, marginTop: 12, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFCDD2" },
-  redAlertText: { color: "#C62828", fontWeight: "600", fontSize: 11 },
-  yellowAlert: { backgroundColor: "#FFF8E1", marginHorizontal: 15, marginTop: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFE082" },
-  yellowAlertText: { color: "#F57F17", fontWeight: "600", fontSize: 11 },
+  
+  // PEMBUNGKUS STICKY ALERT BARU
+  stickyAlertWrapper: {
+    backgroundColor: PINK_LIGHT,
+    paddingBottom: 10,
+  },
   searchContainer: {
-    flexDirection: "row", alignItems: "center", backgroundColor: WHITE, marginHorizontal: 15, marginTop: 12, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14,
+    flexDirection: "row", alignItems: "center", backgroundColor: WHITE, marginHorizontal: 15, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14,
     borderWidth: 1, borderColor: "#FFEBF0",
     ...Platform.select({
       ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 5 },
@@ -354,6 +330,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: Platform.OS === "ios" ? 14 : 11, fontSize: 14, color: DARK_TEXT, fontWeight: "500" },
+  
+  redAlert: { backgroundColor: "#FFEBEE", marginHorizontal: 15, marginTop: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFCDD2" },
+  redAlertText: { color: "#C62828", fontWeight: "600", fontSize: 11 },
+  yellowAlert: { backgroundColor: "#FFF8E1", marginHorizontal: 15, marginTop: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFE082" },
+  yellowAlertText: { color: "#F57F17", fontWeight: "600", fontSize: 11 },
+  
   card: {
     backgroundColor: WHITE, marginHorizontal: 15, marginTop: 12, borderRadius: 20, padding: 18,
     borderWidth: 1, borderColor: "#FFEBF0",
@@ -372,8 +354,8 @@ const styles = StyleSheet.create({
   bottomRow: { marginTop: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   stockLabel: { color: MUTED_TEXT, fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
   stockNumber: { fontSize: 24, fontWeight: "800", marginTop: -2 },
-  produksiBadge: { backgroundColor: "#EAF7EE", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  produksiText: { fontWeight: "700", fontSize: 10, color: "#2E9E5B" },
+  produksiBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  produksiText: { fontWeight: "700", fontSize: 10 },
   floatingButton: {
     position: "absolute", bottom: 30, alignSelf: "center", backgroundColor: "#D4F4E0", flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 32, borderRadius: 30,
     borderWidth: 1, borderColor: "#B2E8C5",
@@ -390,7 +372,7 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 12, color: MUTED_TEXT, marginBottom: 18, marginTop: 2, fontWeight: "500" },
   label: { fontSize: 14, fontWeight: "700", color: DARK_TEXT, marginBottom: 8 },
   pickerWrapper: { borderWidth: 1.5, borderColor: "#FFEBF0", borderRadius: 14, backgroundColor: "#FFF5F7", marginBottom: 16, overflow: "hidden" },
-  pickerInput: { paddingVertical: 14, paddingHorizontal: 14, color: DARK_TEXT, fontSize: 14, fontWeight: "600" },
+  pickerInput: { paddingVertical: 1, paddingHorizontal: 10, color: DARK_TEXT, fontSize: 10, fontWeight: "600" },
   input: { borderWidth: 1.5, borderColor: "#FFEBF0", borderRadius: 14, padding: 13, backgroundColor: "#FFF5F7", marginBottom: 20, fontSize: 14, color: DARK_TEXT, fontWeight: "600" },
   saveButton: {
     backgroundColor: "#E05A6A", padding: 15, borderRadius: 30, alignItems: "center",

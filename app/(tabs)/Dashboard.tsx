@@ -8,13 +8,14 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router"; // ✅ Diubah: menggunakan hook bawaan expo-router
+import { useFocusEffect, useRouter } from "expo-router";
 
 const BASE_URL = "http://192.168.254.103:5000/api";
 
 export default function Index() {
-  const router = useRouter(); // ✅ Inisialisasi router di sini agar bebas dari error 'undefined'
+  const router = useRouter(); 
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     pendapatanHariIni: 0,
@@ -49,7 +50,7 @@ export default function Index() {
       let totalTransaksiHariIni = 0;
       const produkMap: any = {};
 
-      // 1. PROSES DATA TRANSAKSI (Sesuai ERD)
+      // 1. PROSES DATA TRANSAKSI
       transaksi.forEach((trx: any) => {
         const trxDateStr = trx.tanggalTransaksi?.split("T")[0];
 
@@ -71,11 +72,11 @@ export default function Index() {
         .sort((a: any, b: any) => b.qty - a.qty)
         .slice(0, 3);
 
-      // 2. PROSES ALARM STOK (Sesuai Kolom 'stok' di ERD)
+      // 2. PROSES ALARM STOK (Produk Habis & Hampir Habis)
       const produkHabis: string[] = [];
       const produkHampirHabis: string[] = [];
-
-      produk.forEach((prod: any) => {
+      const produkTerurut = [...produk].sort((a: any, b: any) => a.stok - b.stok);
+      produkTerurut.forEach((prod: any) => {
         if (prod.stok === 0) {
           produkHabis.push(prod.namaProduk);
         } else if (prod.stok > 0 && prod.stok < 10) {
@@ -104,7 +105,6 @@ export default function Index() {
 
   if (loading) {
     return (
-      // ✅ Gradient loading diselaraskan menjadi Soft Pink premium
       <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="white" />
       </LinearGradient>
@@ -112,16 +112,19 @@ export default function Index() {
   }
 
   return (
-    // ✅ Menggunakan warna gradient baru yang lebih cerah dan tidak membosankan
     <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
-          <Text style={styles.logo}>Cakelytics</Text>
+          <Image 
+            source={require("../../assets/images/logo-cakelitycs.png")}
+            style={styles.logoImage} 
+            resizeMode="contain"
+          />
           <Text style={styles.date}>
             {new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </Text>
-          <Text style={styles.greeting}>Yuk, Bikin Hari Ini Makin Manis! 🍰</Text>
+          <Text style={styles.greeting}>Serving sweet vibes and big energy!✨</Text>
         </View>
 
         <View style={styles.incomeCard}>
@@ -211,31 +214,15 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  
-  // Header Text Styles
-  header: { paddingTop: 60, paddingHorizontal: 20, marginBottom: 20 },
-  logo: { color: "white", fontSize: 28, fontWeight: "bold", marginBottom: 1 },
-  date: { color: "#FFE3EB", marginBottom: 3, fontWeight: "500" },
-  greeting: { color: "white", fontSize: 25, fontWeight: "bold", marginTop: 1 },
-
-  // Income Card Style (Dengan bayangan halus yang mewah)
-  incomeCard: { 
-    backgroundColor: "white", 
-    marginHorizontal: 20, 
-    borderRadius: 24, 
-    padding: 24, 
-    marginBottom: 20, 
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4 
-  },
+  header: { paddingTop: 20, paddingHorizontal: 20, marginBottom: 5 },
+  logoImage: {width: 180, height: 60, marginBottom: -8,marginLeft: -3},
+  date: { color: "#FFE3EB", marginBottom: 1, fontWeight: "500" },
+  greeting: { color: "white", fontSize: 18, fontWeight: "bold", marginTop: 1 },
+  incomeCard: {backgroundColor: "white",marginHorizontal: 20, borderRadius: 24, padding: 24,marginBottom: 20, shadowColor: "#4A1525",shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.08, shadowRadius: 12, elevation: 4},
   cardTitle: { fontSize: 13, color: "#8A6871", fontWeight: "600", marginBottom: 5 },
   amount: { fontSize: 30, fontWeight: "bold", color: "#4A1525", marginBottom: 5 },
   increase: { color: "#2D8A4E", fontSize: 12, fontWeight: "600" },
-
-  // Warning Cards (Warna pastel yang lebih teduh & modern)
   warningRed: { 
     backgroundColor: "#FFEAEA", 
     marginHorizontal: 20, 
@@ -247,7 +234,6 @@ const styles = StyleSheet.create({
     alignItems: "center" 
   },
   warningRedText: { color: "#CC3838", fontWeight: "700", fontSize: 14 },
-  
   warningYellow: { 
     backgroundColor: "#FFF3CD", 
     marginHorizontal: 20, 
@@ -264,7 +250,7 @@ const styles = StyleSheet.create({
   warningIconYellow: { fontSize: 20 },
   warningDetail: { fontSize: 13, color: "#665559", marginTop: 2 },
 
-  // Stats Card Row (Lebih seimbang susunannya)
+  // Stats Card Row
   statsContainer: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginBottom: 20, gap: 12 },
   statsCard: { 
     backgroundColor: "#FFF0F2", 

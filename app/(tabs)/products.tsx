@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Image } from "react-native";
-import { LinearGradient } from "expo-linear-gradient"; // ✅ Ditambahkan agar sinkron dengan gradient Dashboard
+import { LinearGradient } from "expo-linear-gradient"; 
 
 import {
   View,
@@ -17,221 +17,128 @@ import {
 const BASE_URL = "http://192.168.254.103:5000/api";
 
 export default function Product() {
-
   const [products, setProducts] = useState<any[]>([]);
-
-  const [modalVisible, setModalVisible] =
-    useState(false);
-
-  const [search, setSearch] =
-    useState("");
-
-  const [name, setName] =
-    useState("");
-
-  const [hpp, setHpp] =
-    useState("");
-
-  const [hargaJual, setHargaJual] =
-    useState("");
-
-  const [editId, setEditId] =
-    useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [search, setSearch] = useState("");
+  const [name, setName] = useState("");
+  const [hpp, setHpp] = useState("");
+  const [hargaJual, setHargaJual] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
 
   // AMBIL DATA
   useEffect(() => {
-
     fetchProducts();
-
     const interval = setInterval(() => {
       fetchProducts();
     }, 2000);
-
     return () => clearInterval(interval);
-
   }, []);
 
   // GET PRODUK
   const fetchProducts = async () => {
-
     try {
-
-      const response =
-        await fetch(`${BASE_URL}/produk`);
-
-      const data =
-        await response.json();
-
+      const response = await fetch(`${BASE_URL}/produk`);
+      const data = await response.json();
       setProducts(data);
-
     } catch (error) {
-
       console.log(error);
-
-      Alert.alert(
-        "Error",
-        "Gagal mengambil data produk"
-      );
+      Alert.alert("Error", "Gagal mengambil data produk");
     }
   };
 
   // FILTER SEARCH
-  const filteredProducts =
-    products.filter((p) =>
-      p.namaProduk
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    );
+  const filteredProducts = products.filter((p) =>
+    p.namaProduk.toLowerCase().includes(search.toLowerCase())
+  );
 
   // SIMPAN PRODUK
   const saveProduct = async () => {
-
     if (!name || !hpp || !hargaJual) {
-
-      Alert.alert(
-        "Warning",
-        "Semua field wajib diisi"
-      );
-
+      Alert.alert("Warning", "Semua field wajib diisi");
       return;
     }
 
     try {
-
-      // EDIT
       if (editId) {
-
-        await fetch(
-          `${BASE_URL}/produk/${editId}`,
-          {
-            method: "PUT",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              namaProduk: name,
-              hargaModal: Number(hpp),
-              hargaJual: Number(hargaJual),
-            }),
-          }
-        );
-
+        // EDIT
+        await fetch(`${BASE_URL}/produk/${editId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            namaProduk: name,
+            hargaModal: Number(hpp),
+            hargaJual: Number(hargaJual),
+          }),
+        });
       } else {
-
         // TAMBAH
-        await fetch(
-          `${BASE_URL}/produk`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              namaProduk: name,
-              hargaModal: Number(hpp),
-              hargaJual: Number(hargaJual),
-              stok: 0,
-            }),
-          }
-        );
+        await fetch(`${BASE_URL}/produk`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            namaProduk: name,
+            hargaModal: Number(hpp),
+            hargaJual: Number(hargaJual),
+            stok: 0,
+          }),
+        });
       }
-
       fetchProducts();
-
       resetForm();
-
     } catch (error) {
-
       console.log(error);
-
-      Alert.alert(
-        "Error",
-        "Gagal menyimpan produk"
-      );
+      Alert.alert("Error", "Gagal menyimpan produk");
     }
   };
 
   // RESET
   const resetForm = () => {
-
     setName("");
-
     setHpp("");
-
     setHargaJual("");
-
     setEditId(null);
-
     setModalVisible(false);
   };
 
   // DELETE
-  const deleteProduct = async (
-    idProduk: number
-  ) => {
-
+  const deleteProduct = async (idProduk: number) => {
     try {
-
-      await fetch(
-        `${BASE_URL}/produk/${idProduk}`,
-        {
-          method: "DELETE",
-        }
-      );
-
+      await fetch(`${BASE_URL}/produk/${idProduk}`, {
+        method: "DELETE",
+      });
     } catch (error) {
-
       console.log(error);
-
-      Alert.alert(
-        "Error",
-        "Gagal menghapus produk"
-      );
+      Alert.alert("Error", "Gagal menghapus produk");
     }
   };
 
   // EDIT
   const handleEdit = (item: any) => {
-
     setName(item.namaProduk);
-
     setHpp(item.hargaModal.toString());
-
-    setHargaJual(
-      item.hargaJual.toString()
-    );
-
+    setHargaJual(item.hargaJual.toString());
     setEditId(item.idProduk);
-
     setModalVisible(true);
   };
 
   return (
-    // ✅ Mengganti View luar dengan LinearGradient agar sewarna dengan dashboard
     <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={styles.container}>
-
-      {/* APP NAME */}
-      <Text style={styles.appName}>
-        Cakelytics
-      </Text>
+      
+      {/* SEKARANG SUDAH PAKAI LOGO IMAGEMU 🎀 */}
+      <Image 
+        source={require("../../assets/images/logo-cakelitycs.png")} 
+        style={styles.logoImageWhite} 
+        resizeMode="contain"
+      />
 
       {/* HEADER */}
       <View style={styles.headerRow}>
-
-        <Text style={styles.title}>
-          KELOLA PRODUK
-        </Text>
-
-        <Text style={styles.iconBox}>
-          📦
-        </Text>
-
+        <Text style={styles.title}>KELOLA PRODUK</Text>
+        <Text style={styles.iconBox}>📦</Text>
       </View>
 
       {/* SEARCH */}
@@ -245,121 +152,67 @@ export default function Product() {
 
       {/* EMPTY */}
       {filteredProducts.length === 0 && (
-
-        <Text style={styles.emptyText}>
-          Belum ada produk
-        </Text>
-
+        <Text style={styles.emptyText}>Belum ada produk</Text>
       )}
 
       {/* LIST */}
       <FlatList
         data={filteredProducts}
-        keyExtractor={(item) =>
-          item.idProduk.toString()
-        }
+        keyExtractor={(item) => item.idProduk.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: 140, // Ditinggikan sedikit agar tidak tertutup tombol tambah
+          paddingBottom: 140, 
         }}
         renderItem={({ item }) => {
-
-          const keuntungan =
-            item.hargaJual -
-            item.hargaModal;
-
-          const margin =
-            item.hargaModal > 0
-              ? (
-                  (keuntungan /
-                    item.hargaModal) *
-                  100
-                ).toFixed(0)
-              : "0";
+          const keuntungan = item.hargaJual - item.hargaModal;
+          const margin = item.hargaModal > 0 
+            ? ((keuntungan / item.hargaModal) * 100).toFixed(0) 
+            : "0";
 
           return (
-
             <View style={styles.card}>
-
               {/* TOP */}
               <View style={styles.cardTop}>
-
-                <Text style={styles.productName}>
-                  {item.namaProduk}
-                </Text>
-
+                <Text style={styles.productName}>{item.namaProduk}</Text>
                 <View style={styles.iconRow}>
-
                   {/* EDIT */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleEdit(item)
-                    }
-                  >
-                    <Text style={styles.edit}>
-                      ✏️
-                    </Text>
+                  <TouchableOpacity onPress={() => handleEdit(item)}>
+                    <Text style={styles.edit}>✏️</Text>
                   </TouchableOpacity>
 
                   {/* DELETE */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      deleteProduct(
-                        item.idProduk
-                      )
-                    }
-                  >
-                    <Text style={styles.delete}>
-                      🗑️
-                    </Text>
+                  <TouchableOpacity onPress={() => deleteProduct(item.idProduk)}>
+                    <Text style={styles.delete}>🗑️</Text>
                   </TouchableOpacity>
-
                 </View>
               </View>
 
               {/* HARGA */}
               <View style={styles.priceRow}>
-
                 <Text style={styles.badge}>
                   HPP: Rp {item.hargaModal.toLocaleString("id-ID")}
                 </Text>
-
                 <Text style={styles.badgeJual}>
                   JUAL: Rp {item.hargaJual.toLocaleString("id-ID")}
                 </Text>
-
               </View>
 
               <View style={styles.line} />
 
               {/* INFO */}
               <View style={styles.infoRow}>
-
                 <View>
-                  <Text style={styles.label}>
-                    STOK
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.stok}
-                  </Text>
+                  <Text style={styles.label}>STOK</Text>
+                  <Text style={styles.value}>{item.stok}</Text>
                 </View>
 
                 <View>
-                  <Text style={styles.label}>
-                    MARGIN
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {margin}%
-                  </Text>
+                  <Text style={styles.label}>MARGIN</Text>
+                  <Text style={styles.value}>{margin}%</Text>
                 </View>
 
                 <View>
-                  <Text style={styles.label}>
-                    KEUNTUNGAN
-                  </Text>
-
+                  <Text style={styles.label}>KEUNTUNGAN</Text>
                   <Text style={styles.valueKeuntungan}>
                     Rp {keuntungan.toLocaleString("id-ID")}
                   </Text>
@@ -368,26 +221,15 @@ export default function Product() {
                 <Text
                   style={[
                     styles.available,
-
                     {
-                      backgroundColor:
-                        item.stok > 0
-                          ? "#FFEAEA" // Menggunakan palette soft warning dari dashboard
-                          : "#FFF3CD", 
-                      color: 
-                        item.stok > 0
-                          ? "#CC3838" 
-                          : "#856404",
+                      backgroundColor: item.stok > 0 ? "#FFEAEA" : "#FFF3CD", 
+                      color: item.stok > 0 ? "#CC3838" : "#856404",
                     },
                   ]}
                 >
-                  {item.stok > 0
-                    ? "TERSEDIA"
-                    : "KOSONG"}
+                  {item.stok > 0 ? "TERSEDIA" : "KOSONG"}
                 </Text>
-
               </View>
-
             </View>
           );
         }}
@@ -397,37 +239,20 @@ export default function Product() {
       <TouchableOpacity
         style={styles.addButton}
         activeOpacity={0.9}
-        onPress={() =>
-          setModalVisible(true)
-        }
+        onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.addText}>
-          + Tambah Produk Baru
-        </Text>
+        <Text style={styles.addText}>+ Tambah Produk Baru</Text>
       </TouchableOpacity>
 
       {/* MODAL */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-      >
-
+      <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-
-          {/* ✅ Menggunakan LinearGradient pada box modal agar terlihat sangat estetik */}
           <LinearGradient colors={["#FFFFFF", "#FFF5F7"]} style={styles.modalBox}>
-
             <Text style={styles.modalTitle}>
-              {editId
-                ? "Edit Produk"
-                : "Tambah Produk Baru"}
+              {editId ? "Edit Produk" : "Tambah Produk Baru"}
             </Text>
 
-            <Text style={styles.labelInput}>
-              Nama Produk
-            </Text>
-
+            <Text style={styles.labelInput}>Nama Produk</Text>
             <TextInput
               placeholder="Contoh : Soft Cookies"
               placeholderTextColor="#B0A0A5"
@@ -436,10 +261,7 @@ export default function Product() {
               onChangeText={setName}
             />
 
-            <Text style={styles.labelInput}>
-              Harga Pokok Penjualan (HPP)
-            </Text>
-
+            <Text style={styles.labelInput}>Harga Pokok Penjualan (HPP)</Text>
             <TextInput
               placeholder="Rp 0"
               placeholderTextColor="#B0A0A5"
@@ -449,10 +271,7 @@ export default function Product() {
               onChangeText={setHpp}
             />
 
-            <Text style={styles.labelInput}>
-              Harga Jual
-            </Text>
-
+            <Text style={styles.labelInput}>Harga Jual</Text>
             <TextInput
               placeholder="Rp 0"
               placeholderTextColor="#B0A0A5"
@@ -463,32 +282,20 @@ export default function Product() {
             />
 
             <TouchableOpacity
-              style={
-                styles.submitButtonRounded
-              }
+              style={styles.submitButtonRounded}
               activeOpacity={0.8}
               onPress={saveProduct}
             >
               <Text style={styles.submitText}>
-                {editId
-                  ? "Update Data Produk"
-                  : "Simpan Produk"}
+                {editId ? "Update Data Produk" : "Simpan Produk"}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={resetForm}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.cancelText}>
-                Batal
-              </Text>
+            <TouchableOpacity onPress={resetForm} activeOpacity={0.6}>
+              <Text style={styles.cancelText}>Batal</Text>
             </TouchableOpacity>
-
           </LinearGradient>
-
         </View>
-
       </Modal>
 
     </LinearGradient>
@@ -496,38 +303,33 @@ export default function Product() {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     paddingTop: 60,
     paddingHorizontal: 16,
   },
-
-  appName: {
-    color: "#ffffff",
-    fontSize: 28,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+  // STYLE LOGO PUTIH BARU 🎀
+  logoImageWhite: { 
+    width: 140, 
+    height: 38, 
+    marginLeft: -4, 
+    marginTop: 4 
   },
-
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    marginBottom: 10,
-    marginTop: 1,
+    marginBottom: 16, // Dinaikkan sedikit agar jarak ke kolom search lebih presisi
+    marginTop: 2,
   },
-
   title: {
     color: "white",
     fontSize: 15,
     fontWeight: "800",
   },
-
   iconBox: {
     fontSize: 20,
   },
-
   search: {
     backgroundColor: "white",
     borderRadius: 20,
@@ -542,7 +344,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-
   emptyText: {
     textAlign: "center",
     color: "#4A1525",
@@ -550,7 +351,6 @@ const styles = StyleSheet.create({
     marginTop: 50,
     fontWeight: "600",
   },
-
   card: {
     backgroundColor: "white",
     borderRadius: 24,
@@ -562,13 +362,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-
   cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   productName: {
     fontWeight: "700",
     fontSize: 16,
@@ -576,12 +374,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 10,
   },
-
   iconRow: {
     flexDirection: "row",
     gap: 8,
   },
-
   edit: {
     fontSize: 14,
     backgroundColor: "#EFFFF2",
@@ -589,7 +385,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
   },
-
   delete: {
     fontSize: 14,
     backgroundColor: "#FFEAEA",
@@ -597,13 +392,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
   },
-
   priceRow: {
     flexDirection: "row",
     gap: 8,
     marginTop: 12,
   },
-
   badge: {
     backgroundColor: "#FFF0F2",
     color: "#A84C63",
@@ -613,7 +406,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-
   badgeJual: {
     backgroundColor: "#EFFFF2",
     color: "#2D8A4E",
@@ -623,38 +415,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-
   line: {
     height: 1,
     backgroundColor: "#FFEBF0",
     marginVertical: 14,
   },
-
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   label: {
     fontSize: 10,
     color: "#8A6871",
     fontWeight: "700",
     marginBottom: 2,
   },
-
   value: {
     fontWeight: "700",
     fontSize: 14,
     color: "#4A1525",
   },
-
   valueKeuntungan: {
     fontWeight: "700",
     fontSize: 14,
     color: "#2D8A4E",
   },
-
   available: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -663,7 +449,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     overflow: "hidden",
   },
-
   addButton: {
     position: "absolute",
     bottom: 24,
@@ -678,20 +463,17 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-
   addText: {
     color: "white",
     fontWeight: "700",
     fontSize: 15,
   },
-
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(74, 21, 37, 0.4)", // Shadow overlay diselaraskan dengan tema Deep Berry
+    backgroundColor: "rgba(74, 21, 37, 0.4)", 
     justifyContent: "center",
     alignItems: "center",
   },
-
   modalBox: {
     width: "90%",
     borderRadius: 28,
@@ -702,7 +484,6 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
-
   modalTitle: {
     fontWeight: "800",
     fontSize: 20,
@@ -710,7 +491,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: "center",
   },
-
   labelInput: {
     fontSize: 12,
     color: "#8A6871",
@@ -718,7 +498,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 12,
   },
-
   inputRounded: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -729,7 +508,6 @@ const styles = StyleSheet.create({
     color: "#4A1525",
     fontWeight: "500",
   },
-
   submitButtonRounded: {
     backgroundColor: "#FF6B97",
     paddingVertical: 16,
@@ -737,13 +515,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 24,
   },
-
   submitText: {
     color: "white",
     fontWeight: "700",
     fontSize: 15,
   },
-
   cancelText: {
     textAlign: "center",
     marginTop: 16,
@@ -751,5 +527,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-
 });

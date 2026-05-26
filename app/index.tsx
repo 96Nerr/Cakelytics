@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, StatusBar, View, Text } from "react-native";
+import { Image, StyleSheet, StatusBar, View, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
@@ -9,7 +9,6 @@ const STRAWBERRY_LIGHT = "#FFB3C1";
 export default function Index() {
   
   useEffect(() => {
-    // Menahan layar selama 2 detik sebelum pindah ke halaman Welcome
     const timer = setTimeout(() => {
       router.replace("/Welcome");
     }, 2000); 
@@ -19,15 +18,15 @@ export default function Index() {
 
   return (
     <LinearGradient colors={[STRAWBERRY_BOLD, STRAWBERRY_LIGHT]} style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={STRAWBERRY_BOLD} />
-      
-      {/* TAMPILAN MINIMALIS: Cuma Tulisan Brand Saja */}
-      <View style={styles.mainWrapper}>
-        <Text style={styles.textBrand}>
-          Cakelytics
-        </Text>
-      </View>
-    </LinearGradient>
+  <StatusBar barStyle="light-content" backgroundColor={STRAWBERRY_BOLD} />
+  <View style={styles.mainWrapper}>
+    <Image
+      source={require("../assets/images/logo-cakelitycs.png")}
+      style={styles.logoImage}
+      resizeMode="contain"
+    />
+  </View>
+</LinearGradient>
   );
 }
 
@@ -41,10 +40,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  textBrand: {
-    fontSize: 36, // Ukurannya dinaikkan sedikit menjadi 36 agar lebih tegas karena berdiri sendiri
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    letterSpacing: 1.5, // Memberi sedikit jarak antar huruf biar estetikanya makin premium
+  logoImage: {
+    width: 250,
+    height: 150,
   },
 });

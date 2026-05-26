@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   FlatList,
+  Image,
 } from "react-native";
 
 const BASE_URL = "http://192.168.254.103:5000/api";
@@ -192,12 +193,17 @@ export default function CartScreen() {
       </View>
 
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.appTitle}>Cakelytics</Text>
-        </View>
+        {/* GANTI BAGIAN HEADER INI: */}
+<View style={styles.header}>
+  <Image 
+    source={require("../../assets/images/logo-cakelitycs.png")} 
+    style={styles.logoImageWhite} 
+    resizeMode="contain"
+  />
+</View>
 
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>CATAT PENJUALAN</Text>
+          <Text style={styles.sectionTitle}>PENJUALAN</Text>
         </View>
 
         {/* Tab Menu */}
@@ -377,9 +383,9 @@ const WHITE = "#FFFFFF";
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 60 },
-  header: { marginBottom: 2 },
-  appTitle: { fontSize: 28, fontWeight: "700", color: "#fcfcfc", letterSpacing: 0.5 },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", marginTop: 1, marginBottom: 5 },
+  header: { marginBottom: 12 }, 
+  logoImageWhite: {width: 140, height: 38, marginLeft: -4, marginTop: 4},
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", marginTop: -9, marginBottom: 5 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: "white" },
   tabContainer: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 50, padding: 4, marginBottom: 20 },
   tabItem: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 50 },
@@ -404,7 +410,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15, 
     shadowRadius: 20, 
     elevation: 10,
-    position: "relative" // Menstabilkan penataan anak absolut
+    position: "relative" 
   },
   modalTitle: { fontSize: 20, fontWeight: "800", marginBottom: 20, color: "#4A1525", textAlign: "center" },
   fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6, color: "#8A6871" },
@@ -421,19 +427,18 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   
-  // PERBAIKAN TOTAL: Membatasi tinggi agar tidak meluber dari kartu putih modal
   dropdownListContainer: {
     position: 'absolute',
-    top: 138, // Disesuaikan presisi di bawah kolom dropdown produk                       
+    top: 138, 
     left: 24,                  
     right: 24,                 
     borderWidth: 1,
     borderColor: "#FFEBF0",
     borderRadius: 16,
     backgroundColor: '#fff',
-    elevation: 15, // Ditinggikan agar diprioritaskan oleh sistem Android             
-    zIndex: 999, // Memastikan urutan tumpukan paling depan             
-    maxHeight: 110, // Dibatasi ketat agar muat di dalam batas modal putih
+    elevation: 15,             
+    zIndex: 999,             
+    maxHeight: 110, 
     shadowColor: "#4A1525",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,

@@ -7,11 +7,13 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const screenWidth = Dimensions.get("window").width;
 const BASE_URL = "http://192.168.254.103:5000/api";
@@ -56,20 +58,21 @@ export default function Laporan() {
     const produkMap: any = {};
 
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
     let labels: string[] = [];
     let grafikPendapatan: number[] = [];
 
     if (selectedTab === "7hari") {
       for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(now.getDate() - i);
-        labels.push(`${d.toLocaleDateString("id-ID", { weekday: "short" })},${d.getDate()}`);
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        labels.push(`${d.toLocaleDateString("id-ID", { weekday: "short" })} ${d.getDate()}`);
         grafikPendapatan.push(0);
       }
     } else {
       for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(now.getMonth() - i);
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         labels.push(d.toLocaleDateString("id-ID", { month: "short" }));
         grafikPendapatan.push(0);
       }
@@ -77,37 +80,60 @@ export default function Laporan() {
 
     data.forEach((trx: any) => {
       const trxDate = new Date(trx.tanggalTransaksi);
-      const diffTime = Math.abs(now.getTime() - trxDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const trxDayOnly = new Date(trxDate.getFullYear(), trxDate.getMonth(), trxDate.getDate());
 
       if (selectedTab === "7hari") {
-        if (diffDays > 7) return;
-        const dayIndex = 6 - Math.floor((now.getTime() - trxDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (dayIndex >= 0 && dayIndex < 7) grafikPendapatan[dayIndex] += trx.totalPenjualan || 0;
-      } else {
-        const diffMonths = (now.getFullYear() - trxDate.getFullYear()) * 12 + (now.getMonth() - trxDate.getMonth());
-        if (diffMonths > 5 || diffMonths < 0) return;
-        const monthIndex = 5 - diffMonths;
-        if (monthIndex >= 0 && monthIndex < 6) grafikPendapatan[monthIndex] += trx.totalPenjualan || 0;
+        const diffTime = today.getTime() - trxDayOnly.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 0 && diffDays < 7) {
+          const dayIndex = 6 - diffDays;
+          grafikPendapatan[dayIndex] += trx.totalPenjualan || 0;
+          
+          totalPendapatan += trx.totalPenjualan || 0;
+          trx.detailPenjualan?.forEach((item: any) => {
+            const qty = item?.jumlah || 0;
+            const hargaJual = item?.hargaJualSaatIni || 0;
+            const hargaModal = item?.hargaModalSaatIni || 0;
+            totalKeuntungan += (hargaJual - hargaModal) * qty;
+          });
+        }
+      } 
+      else {
+        const diffMonths = (today.getFullYear() - trxDate.getFullYear()) * 12 + (today.getMonth() - trxDate.getMonth());
+
+        if (diffMonths >= 0 && diffMonths < 6) {
+          const monthIndex = 5 - diffMonths;
+          grafikPendapatan[monthIndex] += trx.totalPenjualan || 0;
+
+          totalPendapatan += trx.totalPenjualan || 0;
+          trx.detailPenjualan?.forEach((item: any) => {
+            const qty = item?.jumlah || 0;
+            const hargaJual = item?.hargaJualSaatIni || 0;
+            const hargaModal = item?.hargaModalSaatIni || 0;
+            totalKeuntungan += (hargaJual - hargaModal) * qty;
+          });
+        }
       }
 
-      totalPendapatan += trx.totalPenjualan || 0;
+      const diffTimeCheck = today.getTime() - trxDayOnly.getTime();
+      const diffDaysCheck = Math.floor(diffTimeCheck / (1000 * 60 * 60 * 24));
+      const diffMonthsCheck = (today.getFullYear() - trxDate.getFullYear()) * 12 + (today.getMonth() - trxDate.getMonth());
+      
+      const isWithinFilter = selectedTab === "7hari" 
+        ? (diffDaysCheck >= 0 && diffDaysCheck < 7)
+        : (diffMonthsCheck >= 0 && diffMonthsCheck < 6);
 
-      // HITUNG REALTIME LABA BERDASARKAN RECORD SAAT TRANSAKSI DI ERD
-      trx.detailPenjualan?.forEach((item: any) => {
-        const nama = item?.produk?.namaProduk || "Produk Tidak Diketahui";
-        const qty = item?.jumlah || 0;
-        const hargaJual = item?.hargaJualSaatIni || 0;
-        const hargaModal = item?.hargaModalSaatIni || 0;
-
-        totalKeuntungan += (hargaJual - hargaModal) * qty;
-
-        if (!produkMap[nama]) {
-          produkMap[nama] = { nama, qty: 0, total: 0 };
-        }
-        produkMap[nama].qty += qty;
-        produkMap[nama].total += item?.subtotal || 0;
-      });
+      if (isWithinFilter) {
+        trx.detailPenjualan?.forEach((item: any) => {
+          const nama = item?.produk?.namaProduk || "Produk Tidak Diketahui";
+          if (!produkMap[nama]) {
+            produkMap[nama] = { nama, qty: 0, total: 0 };
+          }
+          produkMap[nama].qty += item?.jumlah || 0;
+          produkMap[nama].total += item?.subtotal || 0;
+        });
+      }
     });
 
     setSummary({ pendapatan: totalPendapatan, keuntungan: totalKeuntungan });
@@ -118,7 +144,6 @@ export default function Laporan() {
       .slice(0, 3);
 
     const totalQty = sortedProduk.reduce<number>((a, b: any) => a + b.qty, 0);
-    // Kombinasi warna premium: Stroberi Pink, Golden Vanilla, dan Blueberry Purple
     const colors = [PINK_PRIMARY, "#FFB830", "#6C5CE7"];
     
     setPieData(
@@ -149,9 +174,26 @@ export default function Laporan() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         
-        <View style={styles.header}>
-          <Text style={styles.title}>LAPORAN📊</Text>
-        </View>
+        {/* HEADER GRADIENT CARD (DIKECILKAN SINKRON) */}
+        <LinearGradient
+          colors={["#FF6B97", "#FF8DAF"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradientCard}
+        >
+          <Image 
+            source={require("../../assets/images/logo-cakelitycs.png")} 
+            style={styles.logoImageWhite} 
+            resizeMode="contain"
+          />
+          {/* 1. TEXT DIUBAH MENJADI BAHASA INGGRIS + GEN Z */}
+          <Text style={styles.titleSubWhite}>Business Analytics & Performance Insights — We're Cooking! 🔥</Text>
+          
+          {/* 2. BADGE REALTIME DIUBAH MENJADI FORMAL */}
+          <View style={styles.headerBadge}>
+            <Text style={styles.badgeText}>Automated Database Sync</Text>
+          </View>
+        </LinearGradient>
 
         {/* CONTROLLER TAB FILTER */}
         <View style={styles.filterContainer}>
@@ -169,14 +211,17 @@ export default function Laporan() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.todayTitle}>Menuju Target Baru 🚀</Text>
+        {/* 4. TULISAN MENUJU TARGET BARU SEKARANG SUDAH DIHAPUS TOTAL AGAR RINGKAS */}
+        <View style={{ marginTop: 6 }} />
+
+        {/* 5. ISI CARD KECIL SEKARANG SUDAH DI-CENTER SEMUA */}
         <View style={styles.cardRow}>
-          <View style={styles.smallCard}>
+          <View style={styles.smallCardCentered}>
             <View style={styles.iconYellow}><Text style={styles.moneyText}>Rp</Text></View>
             <Text style={styles.cardLabel}>Pendapatan</Text>
             <Text style={styles.cardValue}>{formatRupiah(summary.pendapatan)}</Text>
           </View>
-          <View style={styles.smallCard}>
+          <View style={styles.smallCardCentered}>
             <View style={styles.iconGreen}><Ionicons name="trending-up" size={15} color="#2E9E5B" /></View>
             <Text style={styles.cardLabel}>Laba Bersih</Text>
             <Text style={styles.cardValue}>{formatRupiah(summary.keuntungan)}</Text>
@@ -186,11 +231,12 @@ export default function Laporan() {
         {/* BAR CHART */}
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Grafik Omzet Penjualan</Text>
-          {chartData && (
+          {chartData && chartData.datasets[0].data.reduce((a:number, b:number) => a + b, 0) > 0 ? (
             <BarChart
               data={chartData}
-              width={screenWidth - 70}
-              height={200}
+              // 6. LEBAR GRAFIK DINAIKKAN AGAR ANGKA KETERANGAN KIRI TIDAK TEMKAN KE TENGAH
+              width={screenWidth - 40}
+              height={220}
               fromZero={true}
               showValuesOnTopOfBars={true}
               yAxisLabel=""
@@ -199,23 +245,19 @@ export default function Laporan() {
                 backgroundColor: WHITE,
                 backgroundGradientFrom: WHITE,
                 backgroundGradientTo: WHITE,
-                backgroundGradientFromOpacity: 1,
-                backgroundGradientToOpacity: 1,
                 decimalPlaces: 0,
-                // Merubah warna batang menjadi Pink Premium dengan gradasi opacity
                 color: (opacity = 1) => `rgba(255, 107, 151, ${opacity})`,
                 labelColor: () => DARK_TEXT,
-                barPercentage: 0.5,
-                style: {
-                  borderRadius: 16
-                },
+                barPercentage: 0.55,
                 propsForLabels: {
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: "600"
                 }
               }}
-              style={{ marginTop: 15, borderRadius: 16 }}
+              style={{ marginTop: 15, borderRadius: 16, marginLeft: -15 }}
             />
+          ) : (
+            <Text style={styles.emptyText}>Tidak ada data omzet pada periode ini</Text>
           )}
         </View>
 
@@ -226,11 +268,11 @@ export default function Laporan() {
             {pieData.length > 0 ? (
               <PieChart
                 data={pieData}
-                width={screenWidth - 70}
+                width={screenWidth - 60}
                 height={160}
                 accessor={"population"}
                 backgroundColor={"transparent"}
-                paddingLeft={"10"}
+                paddingLeft={"15"}
                 center={[0, 0]}
                 hasLegend={true}
                 chartConfig={{
@@ -276,24 +318,75 @@ export default function Laporan() {
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PINK_LIGHT },
   container: { flex: 1, backgroundColor: PINK_LIGHT },
-  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6 },
-  title: { color: DARK_TEXT, fontSize: 24, fontWeight: "900", letterSpacing: 0.5 },
+  
+  // 3. UKURAN CARD PINK DIKECILKAN (DARI VERTICAL 24 MENJADI 14)
+  headerGradientCard: {
+    marginHorizontal: 16,
+    marginTop: 15,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    shadowColor: "#4A1525",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  logoImageWhite: { 
+    width: 140, 
+    height: 38, 
+    marginLeft: -4,
+    marginBottom: 2
+  },
+  titleSubWhite: { 
+    color: "#FFF0F3", 
+    fontSize: 11, 
+    fontWeight: "600", 
+    opacity: 0.95,
+    letterSpacing: 0.2 
+  },
+  headerBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 8
+  },
+  badgeText: {
+    color: WHITE,
+    fontSize: 9,
+    fontWeight: "600"
+  },
+
   filterContainer: { flexDirection: "row", backgroundColor: "rgba(255, 107, 151, 0.15)", marginHorizontal: 20, marginVertical: 12, borderRadius: 16, padding: 4 },
   filterButton: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: "center" },
   activeButton: { backgroundColor: WHITE, shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
   filterText: { color: MUTED_TEXT, fontSize: 13, fontWeight: "700" },
   activeText: { color: PINK_PRIMARY, fontWeight: "800" },
-  todayTitle: { marginHorizontal: 20, marginTop: 12, marginBottom: 10, fontWeight: "800", fontSize: 15, color: DARK_TEXT },
-  cardRow: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20 },
-  smallCard: { 
-    backgroundColor: WHITE, width: "48%", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "#FFEBF0",
-    shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 
+  cardRow: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginTop: 4 },
+  
+  // 5. MODIFIKASI SMALL CARD DI-CENTER SECARA TOTAL
+  smallCardCentered: { 
+    backgroundColor: WHITE, 
+    width: "48%", 
+    borderRadius: 20, 
+    padding: 16, 
+    borderWidth: 1, 
+    borderColor: "#FFEBF0",
+    alignItems: "center", // Text dan icon otomatis rata tengah
+    justifyContent: "center",
+    shadowColor: DARK_TEXT, 
+    shadowOffset: { width: 0, height: 3 }, 
+    shadowOpacity: 0.04, 
+    shadowRadius: 6, 
+    elevation: 2 
   },
-  iconYellow: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#FFF3B0", justifyContent: "center", alignItems: "center", marginBottom: 8 },
-  iconGreen: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#EAF7EE", justifyContent: "center", alignItems: "center", marginBottom: 8 },
+  iconYellow: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#FFF3B0", justifyContent: "center", alignItems: "center", marginBottom: 6 },
+  iconGreen: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#EAF7EE", justifyContent: "center", alignItems: "center", marginBottom: 6 },
   moneyText: { fontWeight: "800", fontSize: 12, color: "#FFA000" },
-  cardLabel: { color: MUTED_TEXT, fontSize: 11, fontWeight: "600" },
-  cardValue: { fontWeight: "800", fontSize: 13, marginTop: 3, color: DARK_TEXT },
+  cardLabel: { color: MUTED_TEXT, fontSize: 11, fontWeight: "600", textAlign: "center" },
+  cardValue: { fontWeight: "800", fontSize: 13, marginTop: 3, color: DARK_TEXT, textAlign: "center" },
   chartCard: { 
     backgroundColor: WHITE, marginHorizontal: 20, marginTop: 16, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "#FFEBF0",
     shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 
@@ -305,7 +398,7 @@ const styles = StyleSheet.create({
   },
   bestSellerTitle: { fontWeight: "800", fontSize: 15, color: DARK_TEXT },
   pieRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4 },
-  emptyText: { textAlign: "center", color: MUTED_TEXT, marginVertical: 20, fontWeight: "500", fontSize: 13 },
+  emptyText: { textAlign: "center", color: MUTED_TEXT, marginVertical: 20, fontWeight: "500", fontSize: 13, width: "100%" },
   productCard: { marginTop: 10, borderRadius: 16, padding: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   productLeft: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 },
   productIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center", marginRight: 12 },

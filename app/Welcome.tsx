@@ -18,7 +18,8 @@ const DARK_TEXT = "#4A1525";
 const MUTED_TEXT = "#8A6871";
 const WHITE = "#FFFFFF";
 
-const CAROUSEL_DATA = [
+// DATA ASLI: Ada 4 item
+const BASE_DATA = [
   {
     id: "1",
     image: require("../assets/images/logoBakever.png"),
@@ -45,40 +46,52 @@ const CAROUSEL_DATA = [
   },
 ];
 
+const CAROUSEL_DATA = [...BASE_DATA, { ...BASE_DATA[0], id: "fake-1" }];
+
 export default function Welcome() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const currentIndexRef = useRef(0);
   const flatListRef = useRef<FlatList>(null);
+  const isResetting = useRef(false);
 
   useEffect(() => {
     const autoPlayTimer = setInterval(() => {
-      let nextIndex = activeIndex + 1;
-      
-      if (nextIndex >= CAROUSEL_DATA.length) {
-        nextIndex = 0;
-      }
+      if (isResetting.current) return;
+
+      let nextIndex = currentIndexRef.current + 1;
 
       flatListRef.current?.scrollToIndex({
         index: nextIndex,
         animated: true,
       });
+
+      currentIndexRef.current = nextIndex;
       
-      setActiveIndex(nextIndex);
+      setActiveIndex(nextIndex % BASE_DATA.length);
     }, 2500);
 
     return () => clearInterval(autoPlayTimer);
-  }, [activeIndex]);
+  }, []);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setActiveIndex(viewableItems[0].index || 0);
+  const onMomentumScrollEnd = (e: any) => {
+    const contentOffsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / width);
+    
+    currentIndexRef.current = index;
+
+    // Jika sudah sampai di slide "tiruan" (paling akhir)
+    if (index === CAROUSEL_DATA.length - 1) {
+      isResetting.current = true;
+      // Secara instan lempar ke indeks 0 tanpa animasi
+      flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+      currentIndexRef.current = 0;
+      setActiveIndex(0);
+      isResetting.current = false;
+    } else {
+      setActiveIndex(index % BASE_DATA.length);
     }
-  }).current;
+  };
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50
-  }).current;
-
-  // 🛠️ LOGIKA BARU: Sekali tekan, langsung ganti halaman tanpa ampun
   const handleButtonPress = () => {
     router.replace("/(tabs)/Dashboard");
   };
@@ -94,9 +107,8 @@ export default function Welcome() {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          keyExtractor={(item) => item.id}
+          onMomentumScrollEnd={onMomentumScrollEnd} 
+          keyExtractor={(item, idx) => item.id + idx}
           renderItem={({ item }) => (
             <View style={styles.slideItem}>
               <Image source={item.image} style={styles.cake} />
@@ -105,7 +117,7 @@ export default function Welcome() {
         />
         
         <View style={styles.indicatorContainer}>
-          {CAROUSEL_DATA.map((_, index) => (
+          {BASE_DATA.map((_, index) => (
             <View
               key={index}
               style={[
@@ -119,11 +131,11 @@ export default function Welcome() {
 
       <View style={styles.bottomSection}>
         <Text style={styles.title}>
-          {CAROUSEL_DATA[activeIndex].title}
+          {BASE_DATA[activeIndex].title}
         </Text>
 
         <Text style={styles.description}>
-          {CAROUSEL_DATA[activeIndex].desc}
+          {BASE_DATA[activeIndex].desc}
         </Text>
 
         <TouchableOpacity
@@ -131,7 +143,6 @@ export default function Welcome() {
           activeOpacity={0.85}
           onPress={handleButtonPress}
         >
-          {/* 🛠️ TEKS TOMBOL: Selalu tulisan "Mulai Sekarang" di semua slide */}
           <Text style={styles.buttonText}>Mulai Sekarang</Text>
         </TouchableOpacity>
       </View>
@@ -145,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
   },
   topSection: {
-    flex: 1.3, 
+    flex: 1, 
     backgroundColor: PINK_PRIMARY, 
     borderBottomLeftRadius: 60,   
     borderBottomRightRadius: 60,
@@ -159,14 +170,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cake: {
-    width: 220,
-    height: 220,
+    width: 300,
+    height: 300,
     resizeMode: "contain",
   },
   indicatorContainer: {
     flexDirection: "row",
     position: "absolute",
-    bottom: 25, 
+    bottom: 20, 
   },
   dot: {
     height: 8,

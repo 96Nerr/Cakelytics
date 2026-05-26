@@ -238,28 +238,11 @@ export default function RiwayatScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
+  container: {flex: 1, paddingHorizontal: 16, paddingTop: 23,},
   headerRow: { marginBottom: 2, alignItems: "flex-start" },
-  logo: {
-    width: 120,
-    height: 35,
-    resizeMode: "contain",
-  },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: WHITE,
-  },
+  logo: { width: 140, height: 38, marginLeft: -4, marginTop: 4 },
+  sectionRow: { flexDirection: "row", alignItems: "center", marginTop: 1, marginBottom: 5 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: "white" },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "rgba(255,255,255,0.25)",
