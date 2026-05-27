@@ -1,14 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BarChart, PieChart } from "react-native-chart-kit";
@@ -18,7 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 const screenWidth = Dimensions.get("window").width;
 const BASE_URL = "http://192.168.254.103:5000/api";
 
-// TEMA WARNA PREMIUM (Strawberry Soft-Cake)
+// background utama
 const PINK_PRIMARY = "#FF6B97";
 const PINK_LIGHT = "#FFF5F7";
 const DARK_TEXT = "#4A1525";
@@ -174,7 +165,7 @@ export default function Laporan() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         
-        {/* HEADER GRADIENT CARD (DIKECILKAN SINKRON) */}
+        {/* HEADER GRADIENT CARD */}
         <LinearGradient
           colors={["#FF6B97", "#FF8DAF"]}
           start={{ x: 0, y: 0 }}
@@ -186,16 +177,16 @@ export default function Laporan() {
             style={styles.logoImageWhite} 
             resizeMode="contain"
           />
-          {/* 1. TEXT DIUBAH MENJADI BAHASA INGGRIS + GEN Z */}
+          {/* 1. title header */}
           <Text style={styles.titleSubWhite}>Business Analytics & Performance Insights — We're Cooking! 🔥</Text>
           
-          {/* 2. BADGE REALTIME DIUBAH MENJADI FORMAL */}
+          {/* 2. badge realtime */}
           <View style={styles.headerBadge}>
             <Text style={styles.badgeText}>Automated Database Sync</Text>
           </View>
         </LinearGradient>
 
-        {/* CONTROLLER TAB FILTER */}
+        {/* controller tab filter*/}
         <View style={styles.filterContainer}>
           <TouchableOpacity 
             style={[styles.filterButton, selectedTab === "7hari" && styles.activeButton]} 
@@ -211,10 +202,7 @@ export default function Laporan() {
           </TouchableOpacity>
         </View>
 
-        {/* 4. TULISAN MENUJU TARGET BARU SEKARANG SUDAH DIHAPUS TOTAL AGAR RINGKAS */}
         <View style={{ marginTop: 6 }} />
-
-        {/* 5. ISI CARD KECIL SEKARANG SUDAH DI-CENTER SEMUA */}
         <View style={styles.cardRow}>
           <View style={styles.smallCardCentered}>
             <View style={styles.iconYellow}><Text style={styles.moneyText}>Rp</Text></View>
@@ -227,40 +215,24 @@ export default function Laporan() {
             <Text style={styles.cardValue}>{formatRupiah(summary.keuntungan)}</Text>
           </View>
         </View>
-
-        {/* BAR CHART */}
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Grafik Omzet Penjualan</Text>
-          {chartData && chartData.datasets[0].data.reduce((a:number, b:number) => a + b, 0) > 0 ? (
+          {chartData && chartData.datasets[0].data.reduce((a: number, b: number) => a + b, 0) > 0 ? (
             <BarChart
               data={chartData}
-              // 6. LEBAR GRAFIK DINAIKKAN AGAR ANGKA KETERANGAN KIRI TIDAK TEMKAN KE TENGAH
               width={screenWidth - 40}
               height={220}
               fromZero={true}
               showValuesOnTopOfBars={true}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: WHITE,
-                backgroundGradientFrom: WHITE,
-                backgroundGradientTo: WHITE,
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(255, 107, 151, ${opacity})`,
-                labelColor: () => DARK_TEXT,
-                barPercentage: 0.55,
-                propsForLabels: {
-                  fontSize: 9,
-                  fontWeight: "600"
-                }
-              }}
+              chartConfig={{ backgroundColor: WHITE, backgroundGradientFrom: WHITE, backgroundGradientTo: WHITE, decimalPlaces: 0, color: (opacity = 1) => `rgba(255, 107, 151, ${opacity})`, labelColor: () => DARK_TEXT, barPercentage: 0.55, propsForLabels: { fontSize: 9, fontWeight: "600" } }}
               style={{ marginTop: 15, borderRadius: 16, marginLeft: -15 }}
             />
           ) : (
             <Text style={styles.emptyText}>Tidak ada data omzet pada periode ini</Text>
           )}
         </View>
-
         {/* PIE CHART PRODUK TERLARIS */}
         <View style={styles.bestSellerCard}>
           <Text style={styles.bestSellerTitle}>Proporsi Kue Terlaris</Text>
@@ -318,84 +290,26 @@ export default function Laporan() {
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PINK_LIGHT },
   container: { flex: 1, backgroundColor: PINK_LIGHT },
-  
-  // 3. UKURAN CARD PINK DIKECILKAN (DARI VERTICAL 24 MENJADI 14)
-  headerGradientCard: {
-    marginHorizontal: 16,
-    marginTop: 15,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  logoImageWhite: { 
-    width: 140, 
-    height: 38, 
-    marginLeft: -4,
-    marginBottom: 2
-  },
-  titleSubWhite: { 
-    color: "#FFF0F3", 
-    fontSize: 11, 
-    fontWeight: "600", 
-    opacity: 0.95,
-    letterSpacing: 0.2 
-  },
-  headerBadge: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 8
-  },
-  badgeText: {
-    color: WHITE,
-    fontSize: 9,
-    fontWeight: "600"
-  },
-
+  headerGradientCard: { marginHorizontal: 16, marginTop: 15, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 20, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
+  logoImageWhite: { width: 140, height: 38, marginLeft: -4, marginBottom: 2 },
+  titleSubWhite: { color: "#FFF0F3", fontSize: 11, fontWeight: "600", opacity: 0.95, letterSpacing: 0.2 },
+  headerBadge: { backgroundColor: "rgba(255, 255, 255, 0.2)", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginTop: 8 },
+  badgeText: { color: WHITE, fontSize: 9, fontWeight: "600" },
   filterContainer: { flexDirection: "row", backgroundColor: "rgba(255, 107, 151, 0.15)", marginHorizontal: 20, marginVertical: 12, borderRadius: 16, padding: 4 },
   filterButton: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: "center" },
   activeButton: { backgroundColor: WHITE, shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
   filterText: { color: MUTED_TEXT, fontSize: 13, fontWeight: "700" },
   activeText: { color: PINK_PRIMARY, fontWeight: "800" },
   cardRow: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginTop: 4 },
-  
-  // 5. MODIFIKASI SMALL CARD DI-CENTER SECARA TOTAL
-  smallCardCentered: { 
-    backgroundColor: WHITE, 
-    width: "48%", 
-    borderRadius: 20, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: "#FFEBF0",
-    alignItems: "center", // Text dan icon otomatis rata tengah
-    justifyContent: "center",
-    shadowColor: DARK_TEXT, 
-    shadowOffset: { width: 0, height: 3 }, 
-    shadowOpacity: 0.04, 
-    shadowRadius: 6, 
-    elevation: 2 
-  },
+  smallCardCentered: { backgroundColor: WHITE, width: "48%", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "#FFEBF0", alignItems: "center", justifyContent: "center", shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   iconYellow: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#FFF3B0", justifyContent: "center", alignItems: "center", marginBottom: 6 },
   iconGreen: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#EAF7EE", justifyContent: "center", alignItems: "center", marginBottom: 6 },
   moneyText: { fontWeight: "800", fontSize: 12, color: "#FFA000" },
   cardLabel: { color: MUTED_TEXT, fontSize: 11, fontWeight: "600", textAlign: "center" },
   cardValue: { fontWeight: "800", fontSize: 13, marginTop: 3, color: DARK_TEXT, textAlign: "center" },
-  chartCard: { 
-    backgroundColor: WHITE, marginHorizontal: 20, marginTop: 16, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "#FFEBF0",
-    shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 
-  },
+  chartCard: { backgroundColor: WHITE, marginHorizontal: 20, marginTop: 16, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "#FFEBF0", shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   chartTitle: { fontWeight: "800", fontSize: 15, color: DARK_TEXT },
-  bestSellerCard: { 
-    backgroundColor: WHITE, marginHorizontal: 20, marginTop: 16, marginBottom: 40, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "#FFEBF0",
-    shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 
-  },
+  bestSellerCard: { backgroundColor: WHITE, marginHorizontal: 20, marginTop: 16, marginBottom: 40, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: "#FFEBF0", shadowColor: DARK_TEXT, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   bestSellerTitle: { fontWeight: "800", fontSize: 15, color: DARK_TEXT },
   pieRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4 },
   emptyText: { textAlign: "center", color: MUTED_TEXT, marginVertical: 20, fontWeight: "500", fontSize: 13, width: "100%" },

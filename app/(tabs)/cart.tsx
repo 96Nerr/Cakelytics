@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router"; // Tetap ambil useRouter dari sini
-import { useIsFocused } from "@react-navigation/native"; // Pindahkan useIsFocused ke sini!
+import { useRouter } from "expo-router"; 
+import { useIsFocused } from "@react-navigation/native";
 import React, { useState, useEffect } from "react";
 import {
   Modal,
@@ -192,15 +192,15 @@ export default function CartScreen() {
         <LinearGradient colors={["#FF6B97", "#FFF5F7"]} style={{ flex: 1 }} />
       </View>
 
-      <View style={styles.container}>
-        {/* GANTI BAGIAN HEADER INI: */}
-<View style={styles.header}>
-  <Image 
-    source={require("../../assets/images/logo-cakelitycs.png")} 
-    style={styles.logoImageWhite} 
-    resizeMode="contain"
-  />
-</View>
+            <View style={styles.container}>
+              {/* GANTI BAGIAN HEADER INI: */}
+      <View style={styles.header}>
+        <Image 
+          source={require("../../assets/images/logo-cakelitycs.png")} 
+          style={styles.logoImageWhite} 
+          resizeMode="contain"
+        />
+      </View>
 
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>PENJUALAN</Text>
@@ -318,7 +318,7 @@ export default function CartScreen() {
               <Ionicons name={dropdownOpen ? "chevron-up" : "chevron-down"} size={16} color="#8A6871" />
             </TouchableOpacity>
 
-            {/* LIST UTAMA SEKARANG PAKAI FLATLIST AGAR SCROLL BERJALAN 100% SINKRON */}
+            {/*PAKAI FLATLIST AGAR SINKRON */}
             {dropdownOpen && (
               <View style={styles.dropdownListContainer}>
                 {products.length === 0 ? (
@@ -398,62 +398,13 @@ const styles = StyleSheet.create({
   addButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 16, alignItems: "center", elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
   addButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
   modalOverlay: { flex: 1, backgroundColor: "rgba(74, 21, 37, 0.4)", justifyContent: "center", alignItems: "center" },
-  
-  modalCard: { 
-    backgroundColor: WHITE,
-    borderRadius: 28, 
-    padding: 24, 
-    width: "90%", 
-    maxWidth: 400, 
-    shadowColor: "#4A1525", 
-    shadowOffset: { width: 0, height: 10 }, 
-    shadowOpacity: 0.15, 
-    shadowRadius: 20, 
-    elevation: 10,
-    position: "relative" 
-  },
+  modalCard: {backgroundColor: WHITE, borderRadius: 28, padding: 24, width: "90%", maxWidth: 400, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,position: "relative"},
   modalTitle: { fontSize: 20, fontWeight: "800", marginBottom: 20, color: "#4A1525", textAlign: "center" },
   fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6, color: "#8A6871" },
-  dropdownField: {
-    borderWidth: 1,
-    borderColor: "#FFEBF0",
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    backgroundColor: '#fff',
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 2
-  },
-  
-  dropdownListContainer: {
-    position: 'absolute',
-    top: 138, 
-    left: 24,                  
-    right: 24,                 
-    borderWidth: 1,
-    borderColor: "#FFEBF0",
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    elevation: 15,             
-    zIndex: 999,             
-    maxHeight: 110, 
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,          
-    overflow: 'hidden'
-  },
-  dropdownFlatList: {
-    flexGrow: 0,
-  },
-  dropdownItem: { 
-    padding: 14, 
-    borderBottomWidth: 1, 
-    borderBottomColor: "#FFEBF0",
-    backgroundColor: WHITE
-  },
+  dropdownField: {borderWidth: 1, borderColor: "#FFEBF0",borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13, backgroundColor: '#fff', flexDirection: "row", justifyContent: "space-between", alignItems: "center",marginBottom: 2},
+  dropdownListContainer: { position: 'absolute', top: 138, left: 24, right: 24, borderWidth: 1, borderColor: "#FFEBF0", borderRadius: 16, backgroundColor: '#fff', elevation: 15, zIndex: 999, maxHeight: 110, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 10, overflow: 'hidden' },
+  dropdownFlatList: { flexGrow: 0 },
+  dropdownItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: "#FFEBF0", backgroundColor: WHITE },
   inputField: { borderWidth: 1, borderColor: "#FFEBF0", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 24, backgroundColor: '#fff', color: '#4A1525', fontWeight: "500" },
   submitButton: { backgroundColor: "#FF6B97", borderRadius: 24, paddingVertical: 16, alignItems: "center" },
   submitButtonText: { color: WHITE, fontWeight: "700", fontSize: 15 },
@@ -469,16 +420,7 @@ const styles = StyleSheet.create({
   txDate: { fontSize: 12, color: "#8A6871", marginTop: 4, fontWeight: "500" },
   txTotal: { fontSize: 14, fontWeight: "700", color: "#4A1525" },
   txSeparator: { height: 1, backgroundColor: "#FFEBF0" },
-  summaryContainer: {
-    marginTop: 10,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#FFEBF0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  summaryContainer: { marginTop: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#FFEBF0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   summaryLabel: { fontSize: 14, fontWeight: '700', color: '#4A1525' },
   summaryValue: { fontSize: 16, fontWeight: '800', color: '#2D8A4E' },
   checkoutBtn: { backgroundColor: '#2D8A4E', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 2 },

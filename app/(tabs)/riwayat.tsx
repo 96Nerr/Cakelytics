@@ -3,23 +3,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Image } from "react-native";
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-
+import { Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useIsFocused } from "@react-navigation/native"; // ✅ PENTING: Supaya data ke-refresh pas pindah tab
+import { useIsFocused } from "@react-navigation/native";
 
 const BASE_URL = "http://192.168.254.103:5000/api";
 
-// KONSISTENSI WARNA TEMA (Strawberry Soft-Cake Premium)
 const PINK_DARK = "#FF6B97";
 const PINK_LIGHT = "#FFF5F7";
 const WHITE = "#FFFFFF";
@@ -29,7 +18,7 @@ const GREEN_PRICE = "#2E9E5B";
 
 type DetailPenjualan = {
   idDetail: number;
-  idProduk: number; // ✅ FIX: Menggunakan P besar sesuai struktur database asli
+  idProduk: number;
   jumlah: number;
   subtotal: number;
   produk?: {
@@ -71,7 +60,6 @@ export default function RiwayatScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTrx, setSelectedTrx] = useState<Transaction | null>(null);
 
-  // ✅ Auto refresh data riwayat setiap kali lo habis checkout dari tab "Catat Jual"
   useEffect(() => {
     if (isFocused) {
       fetchTransactions();
@@ -203,7 +191,6 @@ export default function RiwayatScreen() {
                 <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
                   {Array.isArray(selectedTrx.detailPenjualan) && selectedTrx.detailPenjualan.length > 0 ? (
                     selectedTrx.detailPenjualan.map((item, idx) => {
-                      // ✅ Membaca namaProduk dari relasi "produk" atau "Produk" secara dinamis dan aman
                       const namaKue = item.produk?.namaProduk || item.Produk?.namaProduk || `Produk ID #${item.idProduk || (item as any).idproduk}`;
                       
                       return (
@@ -238,114 +225,39 @@ export default function RiwayatScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: {flex: 1, paddingHorizontal: 16, paddingTop: 23,},
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 23 },
   headerRow: { marginBottom: 2, alignItems: "flex-start" },
   logo: { width: 140, height: 38, marginLeft: -4, marginTop: 4 },
   sectionRow: { flexDirection: "row", alignItems: "center", marginTop: 1, marginBottom: 5 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: "white" },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 50,
-    padding: 4,
-    marginBottom: 20,
-  },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 50,
-    alignItems: "center",
-  },
-  tabActive: {
-    backgroundColor: WHITE,
-    elevation: 3,
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
+  tabBar: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 50, padding: 4, marginBottom: 20 },
+  tabItem: { flex: 1, paddingVertical: 10, borderRadius: 50, alignItems: "center" },
+  tabActive: { backgroundColor: WHITE, elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   tabText: { fontSize: 12, color: "#FFE3EB", fontWeight: "600", textAlign: "center" },
   tabTextActive: { color: DARK_TEXT, fontWeight: "700" },
   scrollContent: { paddingBottom: 40 },
-  mainCard: { 
-    backgroundColor: WHITE, 
-    borderRadius: 24, 
-    padding: 20, 
-    elevation: 3, 
-    shadowColor: "#4A1525", 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.05, 
-    shadowRadius: 10 
-  },
+  mainCard: { backgroundColor: WHITE, borderRadius: 24, padding: 20, elevation: 3, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
   cardTitle: { fontSize: 15, fontWeight: "700", color: DARK_TEXT, marginBottom: 16 },
   emptyArea: { alignItems: "center", paddingVertical: 40, gap: 8 },
   emptyText: { fontSize: 13, color: MUTED_TEXT, textAlign: "center", fontWeight: "500" },
   itemList: { marginBottom: 4 },
-  itemRowContainer: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    backgroundColor: "#FFF5F7", 
-    borderRadius: 16, 
-    paddingHorizontal: 16, 
-    paddingVertical: 14, 
-    marginBottom: 10, 
-    borderWidth: 1, 
-    borderColor: "#FFEBF0" 
-  },
+  itemRowContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#FFF5F7", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, borderWidth: 1, borderColor: "#FFEBF0" },
   trxLeft: {},
   trxCode: { fontSize: 14, fontWeight: "700", color: DARK_TEXT },
   trxDate: { fontSize: 12, color: MUTED_TEXT, marginTop: 2, fontWeight: "500" },
   trxPrice: { fontSize: 14, fontWeight: "700", color: GREEN_PRICE },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(74, 21, 37, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  modalCard: {
-    backgroundColor: WHITE,
-    borderRadius: 24,
-    padding: 20,
-    width: "100%",
-    maxWidth: 380,
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(74, 21, 37, 0.4)", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
+  modalCard: { backgroundColor: WHITE, borderRadius: 24, padding: 20, width: "100%", maxWidth: 380, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 12 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   modalTrxCode: { fontSize: 16, fontWeight: "800", color: DARK_TEXT },
   modalDate: { fontSize: 12, color: MUTED_TEXT, marginTop: 4, fontWeight: "500" },
-  closeBtn: {
-    backgroundColor: "#E05A6A",
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  closeBtn: { backgroundColor: "#E05A6A", width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   divider: { height: 1, backgroundColor: "#FFEBF0", marginVertical: 14 },
-  itemDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
+  itemDetailRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   itemName: { fontSize: 13, color: DARK_TEXT, fontWeight: "600", flex: 1, marginRight: 8 },
   itemPrice: { fontSize: 13, color: DARK_TEXT, fontWeight: "700" },
   fallbackText: { fontSize: 12, color: MUTED_TEXT, textAlign: "center", marginVertical: 8 },
-  modalFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+  modalFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pcsText: { fontSize: 13, color: MUTED_TEXT, fontWeight: "500" },
   totalPrice: { fontSize: 16, fontWeight: "800", color: GREEN_PRICE },
 });

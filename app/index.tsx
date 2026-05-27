@@ -31,17 +31,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center" 
-  },
-  mainWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoImage: {
-    width: 250,
-    height: 150,
-  },
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  mainWrapper: { alignItems: "center", justifyContent: "center" },
+  logoImage: { width: 250, height: 150 },
 });

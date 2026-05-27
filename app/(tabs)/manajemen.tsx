@@ -289,61 +289,25 @@ export default function ManajemenStock() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: PINK_LIGHT },
-  headerBox: {
-    backgroundColor: PINK_PRIMARY,
-    paddingTop: Platform.OS === "ios" ? 50 : 45,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 10, 
-  },
+  headerBox: { backgroundColor: PINK_PRIMARY, paddingTop: Platform.OS === "ios" ? 50 : 45, paddingHorizontal: 20, paddingBottom: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, zIndex: 10 },
   logoImageWhite: { width: 130, height: 36, marginLeft: -4, marginBottom: 6 },
   title: { color: WHITE, fontSize: 15, fontWeight: "700", letterSpacing: 0.8 },
   totalProduct: { marginTop: 4, marginBottom: 16, fontSize: 13, color: "#FFF2F5", fontWeight: "500" },
   infoRow: { flexDirection: "row", justifyContent: "space-between" },
-  infoCard: {
-    backgroundColor: WHITE, width: "31%", borderRadius: 16, paddingVertical: 12, alignItems: "center",
-    borderWidth: 1, borderColor: "#FFEBF0",
-    ...Platform.select({
-      ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
-      android: { elevation: 2 },
-    }),
-  },
+  infoCard: { backgroundColor: WHITE, width: "31%", borderRadius: 16, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: "#FFEBF0", ...Platform.select({ ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }, android: { elevation: 2 } }) },
   infoNumber: { fontSize: 22, fontWeight: "bold", color: "#2E9E5B" },
   infoNumberYellow: { fontSize: 22, fontWeight: "bold", color: "#FFA000" },
   infoNumberRed: { fontSize: 22, fontWeight: "bold", color: "#FF5252" },
   infoLabel: { marginTop: 3, fontSize: 11, fontWeight: "600", color: DARK_TEXT },
-  
-  // PEMBUNGKUS STICKY ALERT BARU
-  stickyAlertWrapper: {
-    backgroundColor: PINK_LIGHT,
-    paddingBottom: 10,
-  },
-  searchContainer: {
-    flexDirection: "row", alignItems: "center", backgroundColor: WHITE, marginHorizontal: 15, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: "#FFEBF0",
-    ...Platform.select({
-      ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 5 },
-      android: { elevation: 2 },
-    }),
-  },
+  stickyAlertWrapper: { backgroundColor: PINK_LIGHT, paddingBottom: 10 },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: WHITE, marginHorizontal: 15, marginBottom: 4, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1, borderColor: "#FFEBF0", ...Platform.select({ ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 5 }, android: { elevation: 2 } }) },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: Platform.OS === "ios" ? 14 : 11, fontSize: 14, color: DARK_TEXT, fontWeight: "500" },
-  
   redAlert: { backgroundColor: "#FFEBEE", marginHorizontal: 15, marginTop: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFCDD2" },
   redAlertText: { color: "#C62828", fontWeight: "600", fontSize: 11 },
   yellowAlert: { backgroundColor: "#FFF8E1", marginHorizontal: 15, marginTop: 8, padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#FFE082" },
   yellowAlertText: { color: "#F57F17", fontWeight: "600", fontSize: 11 },
-  
-  card: {
-    backgroundColor: WHITE, marginHorizontal: 15, marginTop: 12, borderRadius: 20, padding: 18,
-    borderWidth: 1, borderColor: "#FFEBF0",
-    ...Platform.select({
-      ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.05, shadowRadius: 8 },
-      android: { elevation: 2 },
-    }),
-  },
+  card: { backgroundColor: WHITE, marginHorizontal: 15, marginTop: 12, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#FFEBF0", ...Platform.select({ ios: { shadowColor: "#4A1525", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.05, shadowRadius: 8 }, android: { elevation: 2 } }) },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   productName: { fontSize: 17, fontWeight: "700", color: DARK_TEXT },
   priceBadgeRow: { flexDirection: "row", marginTop: 4 },
@@ -356,14 +320,7 @@ const styles = StyleSheet.create({
   stockNumber: { fontSize: 24, fontWeight: "800", marginTop: -2 },
   produksiBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   produksiText: { fontWeight: "700", fontSize: 10 },
-  floatingButton: {
-    position: "absolute", bottom: 30, alignSelf: "center", backgroundColor: "#D4F4E0", flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 32, borderRadius: 30,
-    borderWidth: 1, borderColor: "#B2E8C5",
-    ...Platform.select({
-      ios: { shadowColor: "#1E442B", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 },
-      android: { elevation: 4 },
-    }),
-  },
+  floatingButton: { position: "absolute", bottom: 30, alignSelf: "center", backgroundColor: "#D4F4E0", flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 32, borderRadius: 30, borderWidth: 1, borderColor: "#B2E8C5", ...Platform.select({ ios: { shadowColor: "#1E442B", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 }, android: { elevation: 4 } }) },
   floatingText: { color: "#1E442B", fontWeight: "700", fontSize: 15 },
   modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(74, 21, 37, 0.4)" },
   modalBox: { width: "100%", backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 10, paddingHorizontal: 24, paddingBottom: Platform.OS === "ios" ? 40 : 25 },
@@ -374,12 +331,6 @@ const styles = StyleSheet.create({
   pickerWrapper: { borderWidth: 1.5, borderColor: "#FFEBF0", borderRadius: 14, backgroundColor: "#FFF5F7", marginBottom: 16, overflow: "hidden" },
   pickerInput: { paddingVertical: 1, paddingHorizontal: 10, color: DARK_TEXT, fontSize: 10, fontWeight: "600" },
   input: { borderWidth: 1.5, borderColor: "#FFEBF0", borderRadius: 14, padding: 13, backgroundColor: "#FFF5F7", marginBottom: 20, fontSize: 14, color: DARK_TEXT, fontWeight: "600" },
-  saveButton: {
-    backgroundColor: "#E05A6A", padding: 15, borderRadius: 30, alignItems: "center",
-    ...Platform.select({
-      ios: { shadowColor: "#E05A6A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5 },
-      android: { elevation: 3 },
-    }),
-  },
+  saveButton: { backgroundColor: "#E05A6A", padding: 15, borderRadius: 30, alignItems: "center", ...Platform.select({ ios: { shadowColor: "#E05A6A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5 }, android: { elevation: 3 } }) },
   saveText: { color: WHITE, fontWeight: "700", fontSize: 15 },
 });

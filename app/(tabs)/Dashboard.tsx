@@ -1,15 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 
 const BASE_URL = "http://192.168.254.103:5000/api";
@@ -215,35 +207,16 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { paddingTop: 20, paddingHorizontal: 20, marginBottom: 5 },
-  logoImage: {width: 180, height: 60, marginBottom: -8,marginLeft: -3},
+  logoImage: { width: 180, height: 60, marginBottom: -8, marginLeft: -3 },
   date: { color: "#FFE3EB", marginBottom: 1, fontWeight: "500" },
   greeting: { color: "white", fontSize: 18, fontWeight: "bold", marginTop: 1 },
-  incomeCard: {backgroundColor: "white",marginHorizontal: 20, borderRadius: 24, padding: 24,marginBottom: 20, shadowColor: "#4A1525",shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.08, shadowRadius: 12, elevation: 4},
+  incomeCard: { backgroundColor: "white", marginHorizontal: 20, borderRadius: 24, padding: 24, marginBottom: 20, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   cardTitle: { fontSize: 13, color: "#8A6871", fontWeight: "600", marginBottom: 5 },
   amount: { fontSize: 30, fontWeight: "bold", color: "#4A1525", marginBottom: 5 },
   increase: { color: "#2D8A4E", fontSize: 12, fontWeight: "600" },
-  warningRed: { 
-    backgroundColor: "#FFEAEA", 
-    marginHorizontal: 20, 
-    borderRadius: 16, 
-    padding: 16, 
-    marginBottom: 15, 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center" 
-  },
+  warningRed: { backgroundColor: "#FFEAEA", marginHorizontal: 20, borderRadius: 16, padding: 16, marginBottom: 15, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   warningRedText: { color: "#CC3838", fontWeight: "700", fontSize: 14 },
-  warningYellow: { 
-    backgroundColor: "#FFF3CD", 
-    marginHorizontal: 20, 
-    borderRadius: 16, 
-    padding: 16, 
-    marginBottom: 20, 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center" 
-  },
+  warningYellow: { backgroundColor: "#FFF3CD", marginHorizontal: 20, borderRadius: 16, padding: 16, marginBottom: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   warningYellowText: { color: "#856404", fontWeight: "700", fontSize: 14 },
   warningContent: { flex: 1, marginLeft: 12 },
   warningIconRed: { fontSize: 20 },
@@ -252,14 +225,7 @@ const styles = StyleSheet.create({
 
   // Stats Card Row
   statsContainer: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginBottom: 20, gap: 12 },
-  statsCard: { 
-    backgroundColor: "#FFF0F2", 
-    width: "48%", 
-    borderRadius: 20, 
-    padding: 16, 
-    flexDirection: "row", 
-    alignItems: "center" 
-  },
+  statsCard: { backgroundColor: "#FFF0F2", width: "48%", borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center" },
   statsIcon: { fontSize: 26, marginRight: 8 },
   statsContent: { flex: 1 },
   statsTitle: { fontSize: 11, fontWeight: "700", color: "#A84C63", marginBottom: 2 },
@@ -267,18 +233,7 @@ const styles = StyleSheet.create({
   statsLabel: { color: "#8A6871", fontSize: 11, fontWeight: "500" },
 
   // Best Seller Card Style
-  bestSellerCard: { 
-    backgroundColor: "white", 
-    marginHorizontal: 20, 
-    borderRadius: 24, 
-    padding: 22, 
-    marginBottom: 50, 
-    shadowColor: "#4A1525",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3 
-  },
+  bestSellerCard: { backgroundColor: "white", marginHorizontal: 20, borderRadius: 24, padding: 22, marginBottom: 50, shadowColor: "#4A1525", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
   bestSellerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 },
   bestSellerTitle: { fontWeight: "bold", fontSize: 17, color: "#4A1525" },
   seeAll: { color: "#FF6B97", fontWeight: "700", fontSize: 13 },
